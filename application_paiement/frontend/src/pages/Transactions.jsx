@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { transactionAPI } from '../services/api';
+import { formatCurrency } from '../utils/currencyFormatter';
 
 const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
@@ -22,13 +23,13 @@ const Transactions = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Transactions</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Transactions</h1>
       </div>
 
       <div className="card">
-        <div className="mb-4 flex gap-4">
+        <div className="mb-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
           <select
             className="input"
             value={filter.status}
@@ -53,9 +54,9 @@ const Transactions = () => {
         </div>
 
         {loading ? (
-          <div className="text-center py-8">Chargement...</div>
+          <div className="text-center py-8 text-gray-600">Chargement...</div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
             <table className="min-w-full divide-y divide-gray-200">
               <thead>
                 <tr>
@@ -72,7 +73,7 @@ const Transactions = () => {
                   <tr key={transaction._id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm font-mono">{transaction.transactionId}</td>
                     <td className="px-4 py-3 text-sm">{transaction.customer.email}</td>
-                    <td className="px-4 py-3 text-sm font-semibold">{transaction.amount.toFixed(2)} {transaction.currency}</td>
+                    <td className="px-4 py-3 text-sm font-semibold">{formatCurrency(transaction.amount)}</td>
                     <td className="px-4 py-3 text-sm capitalize">{transaction.provider}</td>
                     <td className="px-4 py-3 text-sm">
                       <span className={`badge ${

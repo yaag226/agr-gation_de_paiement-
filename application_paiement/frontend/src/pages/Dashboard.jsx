@@ -2,21 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { analyticsAPI } from '../services/api';
 import { FiDollarSign, FiTrendingUp, FiCreditCard, FiActivity } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
+import { formatCurrency } from '../utils/currencyFormatter';
 
 const StatCard = ({ title, value, icon: Icon, change, color = 'primary' }) => (
-  <div className="card">
+  <div className="card hover:scale-105 transition-transform duration-200">
     <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm text-gray-600 mb-1">{title}</p>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs sm:text-sm text-gray-600 mb-1 truncate">{title}</p>
+        <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{value}</p>
         {change && (
-          <p className={`text-sm mt-1 ${change > 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <p className={`text-xs sm:text-sm mt-1 ${change > 0 ? 'text-green-600' : 'text-red-600'}`}>
             {change > 0 ? '+' : ''}{change}%
           </p>
         )}
       </div>
-      <div className={`p-3 bg-${color}-100 rounded-lg`}>
-        <Icon className={`w-6 h-6 text-${color}-600`} />
+      <div className={`p-2 sm:p-3 bg-${color}-100 rounded-lg flex-shrink-0 ml-2`}>
+        <Icon className={`w-5 h-5 sm:w-6 sm:h-6 text-${color}-600`} />
       </div>
     </div>
   </div>
@@ -73,13 +74,13 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Solde Total"
-          value={`${dashboard?.lifetime?.balance?.toFixed(2) || '0.00'} €`}
+          value={formatCurrency(dashboard?.lifetime?.balance || 0)}
           icon={FiDollarSign}
           color="primary"
         />
         <StatCard
           title="Revenus du mois"
-          value={`${dashboard?.thisMonth?.totalRevenue?.toFixed(2) || '0.00'} €`}
+          value={formatCurrency(dashboard?.thisMonth?.totalRevenue || 0)}
           icon={FiTrendingUp}
           color="green"
         />
@@ -107,7 +108,7 @@ const Dashboard = () => {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Revenus</span>
-              <span className="font-semibold">{dashboard?.today?.totalRevenue?.toFixed(2) || '0.00'} €</span>
+              <span className="font-semibold">{formatCurrency(dashboard?.today?.totalRevenue || 0)}</span>
             </div>
           </div>
         </div>
@@ -121,15 +122,15 @@ const Dashboard = () => {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Revenus</span>
-              <span className="font-semibold">{dashboard?.thisMonth?.totalRevenue?.toFixed(2) || '0.00'} €</span>
+              <span className="font-semibold">{formatCurrency(dashboard?.thisMonth?.totalRevenue || 0)}</span>
             </div>
           </div>
         </div>
       </div>
 
       <div className="card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Transactions récentes</h3>
-        <div className="overflow-x-auto">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Transactions récentes</h3>
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
           <table className="min-w-full divide-y divide-gray-200">
             <thead>
               <tr>
@@ -144,7 +145,7 @@ const Dashboard = () => {
               {dashboard?.recentTransactions?.map((transaction) => (
                 <tr key={transaction._id}>
                   <td className="px-4 py-3 text-sm font-mono">{transaction.transactionId}</td>
-                  <td className="px-4 py-3 text-sm font-semibold">{transaction.amount.toFixed(2)} €</td>
+                  <td className="px-4 py-3 text-sm font-semibold">{formatCurrency(transaction.amount)}</td>
                   <td className="px-4 py-3 text-sm">
                     <span className="capitalize">{transaction.provider}</span>
                   </td>

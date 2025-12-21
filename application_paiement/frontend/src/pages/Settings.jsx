@@ -15,8 +15,8 @@ const Settings = () => {
     isActive: true
   });
   const [testPayment, setTestPayment] = useState({
-    amount: 100,
-    currency: 'EUR',
+    amount: 1000,
+    currency: 'XOF',
     customerEmail: 'test@example.com',
     provider: ''
   });
@@ -218,6 +218,7 @@ const Settings = () => {
                 value={testPayment.currency}
                 onChange={(e) => setTestPayment({ ...testPayment, currency: e.target.value })}
               >
+                <option value="XOF">FCFA (XOF)</option>
                 <option value="EUR">EUR</option>
                 <option value="USD">USD</option>
                 <option value="GBP">GBP</option>
