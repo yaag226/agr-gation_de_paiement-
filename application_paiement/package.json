@@ -1,0 +1,43 @@
+{
+  "name": "payment-aggregator",
+  "version": "1.0.0",
+  "description": "Application complète d'agrégation de paiement avec Node.js, React et MongoDB",
+  "main": "index.js",
+  "scripts": {
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "setup": "npm run install:all && npm run setup:env",
+    "setup:env": "cd backend && cp .env.example .env && cd ../frontend && cp .env.example .env",
+    "seed": "cd backend && npm run seed",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm start",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm run build && npm run preview",
+    "test:backend": "cd backend && npm test",
+    "clean": "rm -rf backend/node_modules frontend/node_modules backend/package-lock.json frontend/package-lock.json"
+  },
+  "keywords": [
+    "payment",
+    "aggregator",
+    "stripe",
+    "paypal",
+    "wave",
+    "nodejs",
+    "react",
+    "mongodb",
+    "express",
+    "jwt",
+    "api"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/payment-aggregator.git"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  }
+}
