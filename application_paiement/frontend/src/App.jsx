@@ -8,6 +8,8 @@ import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
 import Settings from './pages/Settings';
 import Analytics from './pages/Analytics';
+import ClientPayment from './pages/ClientPayment';
+import ClientDashboard from './pages/ClientDashboard';
 
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -40,6 +42,7 @@ const PublicRoute = ({ children }) => {
 function AppRoutes() {
   return (
     <Routes>
+      {/* Routes publiques d'authentification */}
       <Route
         path="/login"
         element={
@@ -57,6 +60,11 @@ function AppRoutes() {
         }
       />
 
+      {/* Routes publiques pour les clients */}
+      <Route path="/client/payer" element={<ClientPayment />} />
+      <Route path="/client/dashboard" element={<ClientDashboard />} />
+
+      {/* Routes privées pour les marchands */}
       <Route
         path="/"
         element={
