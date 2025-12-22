@@ -65,7 +65,7 @@ const Analytics = () => {
 
         <div className="card hover:scale-105 transition-transform duration-200 md:col-span-2 lg:col-span-1">
           <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Aujourd'hui</h3>
-          <p className="text-2xl sm:text-3xl font-bold text-blue-600 break-words">
+          <p className="text-2xl sm:text-3xl font-bold text-green-600 break-words">
             {formatCurrency(stats?.today?.totalRevenue || 0)}
           </p>
           <p className="text-xs sm:text-sm text-gray-600 mt-2">

@@ -20,7 +20,13 @@ const Register = () => {
     setError('');
     setLoading(true);
 
-    const result = await register(formData);
+    // Préparer les données - ne pas envoyer businessName pour les clients
+    const dataToSend = { ...formData };
+    if (formData.role === 'customer') {
+      delete dataToSend.businessName;
+    }
+
+    const result = await register(dataToSend);
 
     if (result.success) {
       navigate('/');
