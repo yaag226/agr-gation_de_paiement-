@@ -12,6 +12,7 @@ import ClientPayment from './pages/ClientPayment';
 import ClientDashboard from './pages/ClientDashboard';
 import AggregatedPayment from './pages/AggregatedPayment';
 import AggregationHistory from './pages/AggregationHistory';
+import ClientHome from './pages/ClientHome';
 
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -63,6 +64,7 @@ function AppRoutes() {
       />
 
       {/* Routes publiques pour les clients */}
+      <Route path="/client" element={<ClientHome />} />
       <Route path="/client/payer" element={<ClientPayment />} />
       <Route path="/client/dashboard" element={<ClientDashboard />} />
       <Route path="/client/aggregation" element={<AggregatedPayment />} />
