@@ -20,7 +20,9 @@ module.exports = {
   PROVIDERS: {
     STRIPE: 'stripe',
     PAYPAL: 'paypal',
-    WAVE: 'wave'
+    WAVE: 'wave',
+    ORANGE_MONEY: 'orange_money',
+    MTN_MONEY: 'mtn_money'
   },
 
   // Currencies
@@ -30,7 +32,9 @@ module.exports = {
   PROVIDER_COMMISSION: {
     stripe: 0.029, // 2.9%
     paypal: 0.034, // 3.4%
-    wave: 0.01     // 1%
+    wave: 0.01,    // 1%
+    orange_money: 0.015, // 1.5%
+    mtn_money: 0.015     // 1.5%
   },
 
   // Default commission for platform

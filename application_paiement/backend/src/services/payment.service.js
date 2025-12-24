@@ -2,7 +2,7 @@ const stripe = require('stripe');
 const { PROVIDER_COMMISSION, PLATFORM_COMMISSION, TRANSACTION_STATUS } = require('../config/constants');
 
 class PaymentService {
-  async processPayment({ provider, providerConfig, amount, currency, customerEmail, customerName, description, transactionId }) {
+  async processPayment({ provider, providerConfig, amount, currency, customerEmail, customerName, customerPhone, description, transactionId }) {
     try {
       switch (provider) {
         case 'stripe':
@@ -11,6 +11,10 @@ class PaymentService {
           return await this.processPayPalPayment({ providerConfig, amount, currency, customerEmail, customerName, description, transactionId });
         case 'wave':
           return await this.processWavePayment({ providerConfig, amount, currency, customerEmail, customerName, description, transactionId });
+        case 'orange_money':
+          return await this.processOrangeMoneyPayment({ providerConfig, amount, currency, customerPhone, customerName, description, transactionId });
+        case 'mtn_money':
+          return await this.processMTNMoneyPayment({ providerConfig, amount, currency, customerPhone, customerName, description, transactionId });
         default:
           throw new Error(`Unsupported payment provider: ${provider}`);
       }
@@ -91,6 +95,58 @@ class PaymentService {
       paymentDetails: {
         paymentId: `WAVE_PAY_${Date.now()}`,
         checkoutUrl: `https://pay.wave.com/m/MOCK_PAYMENT_ID`
+      },
+      commission: {
+        providerFee,
+        platformFee,
+        totalFee: providerFee + platformFee
+      }
+    };
+  }
+
+  async processOrangeMoneyPayment({ providerConfig, amount, currency, customerPhone, customerName, description, transactionId }) {
+    const providerFee = amount * PROVIDER_COMMISSION.orange_money;
+    const platformFee = amount * PLATFORM_COMMISSION;
+
+    // Simulation d'un paiement Orange Money
+    // En production, utiliser l'API Orange Money
+    const success = Math.random() > 0.2; // 80% de succès
+
+    return {
+      providerTransactionId: `OM_${Date.now()}_${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+      status: success ? TRANSACTION_STATUS.COMPLETED : TRANSACTION_STATUS.FAILED,
+      paymentMethod: 'orange_money',
+      paymentDetails: {
+        phoneNumber: customerPhone,
+        operator: 'Orange Money',
+        reference: `OM${Date.now()}`,
+        status: success ? 'success' : 'failed'
+      },
+      commission: {
+        providerFee,
+        platformFee,
+        totalFee: providerFee + platformFee
+      }
+    };
+  }
+
+  async processMTNMoneyPayment({ providerConfig, amount, currency, customerPhone, customerName, description, transactionId }) {
+    const providerFee = amount * PROVIDER_COMMISSION.mtn_money;
+    const platformFee = amount * PLATFORM_COMMISSION;
+
+    // Simulation d'un paiement MTN Mobile Money
+    // En production, utiliser l'API MTN MoMo
+    const success = Math.random() > 0.2; // 80% de succès
+
+    return {
+      providerTransactionId: `MTN_${Date.now()}_${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+      status: success ? TRANSACTION_STATUS.COMPLETED : TRANSACTION_STATUS.FAILED,
+      paymentMethod: 'mtn_money',
+      paymentDetails: {
+        phoneNumber: customerPhone,
+        operator: 'MTN Mobile Money',
+        reference: `MTN${Date.now()}`,
+        status: success ? 'success' : 'failed'
       },
       commission: {
         providerFee,
