@@ -27,19 +27,33 @@ const Home = () => {
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               <Link
                 to="/client/payer"
-                className="block w-full py-4 px-6 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold text-center hover:from-green-600 hover:to-green-700 transition-all shadow-lg hover:shadow-xl"
+                className="block w-full py-3 px-6 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold text-center hover:from-green-600 hover:to-green-700 transition-all shadow-lg hover:shadow-xl"
               >
-                💰 Effectuer un paiement
+                💰 Paiement simple
+              </Link>
+
+              <Link
+                to="/client/aggregation"
+                className="block w-full py-3 px-6 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl font-semibold text-center hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
+              >
+                💳 Agrégation (Payer plusieurs factures)
               </Link>
 
               <Link
                 to="/client/dashboard"
-                className="block w-full py-4 px-6 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl font-semibold text-center hover:from-purple-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
+                className="block w-full py-3 px-6 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl font-semibold text-center hover:from-purple-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
               >
-                📊 Consulter mon historique
+                📊 Historique simple
+              </Link>
+
+              <Link
+                to="/client/aggregation/history"
+                className="block w-full py-3 px-6 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl font-semibold text-center hover:from-teal-600 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl"
+              >
+                📚 Historique agrégation
               </Link>
             </div>
 
@@ -47,8 +61,9 @@ const Home = () => {
               <h3 className="font-semibold text-blue-900 mb-2">✨ Fonctionnalités</h3>
               <ul className="text-sm text-blue-800 space-y-1">
                 <li>✓ Paiement instantané Orange Money & MTN</li>
-                <li>✓ Historique complet des transactions</li>
-                <li>✓ Statistiques détaillées</li>
+                <li>✓ Agrégation de plusieurs factures</li>
+                <li>✓ Traçage complet en temps réel</li>
+                <li>✓ Historique avec logs détaillés</li>
                 <li>✓ Aucune inscription nécessaire</li>
               </ul>
             </div>

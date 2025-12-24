@@ -10,6 +10,7 @@ const merchantRoutes = require('./routes/merchant.routes');
 const transactionRoutes = require('./routes/transaction.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const paymentRoutes = require('./routes/payment.routes');
+const aggregationRoutes = require('./routes/aggregation.routes');
 
 const app = express();
 
@@ -56,6 +57,7 @@ app.use('/api/merchants', merchantRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/aggregation', aggregationRoutes);
 
 // 404 handler
 app.use((req, res) => {
