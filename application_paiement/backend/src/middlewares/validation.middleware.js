@@ -48,15 +48,16 @@ const schemas = {
   createTransaction: Joi.object({
     amount: Joi.number().positive().required(),
     currency: Joi.string().valid('EUR', 'USD', 'XOF', 'GBP').default('EUR'),
-    provider: Joi.string().valid('stripe', 'paypal', 'wave'),
+    provider: Joi.string().valid('stripe', 'paypal', 'wave', 'orange_money', 'mtn_money'),
     customerEmail: Joi.string().email().required(),
     customerName: Joi.string(),
+    customerPhone: Joi.string(),
     description: Joi.string(),
     metadata: Joi.object()
   }),
 
   providerConfig: Joi.object({
-    provider: Joi.string().valid('stripe', 'paypal', 'wave').required(),
+    provider: Joi.string().valid('stripe', 'paypal', 'wave', 'orange_money', 'mtn_money').required(),
     apiKey: Joi.string().required(),
     secretKey: Joi.string().required(),
     webhookSecret: Joi.string(),
