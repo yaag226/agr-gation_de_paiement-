@@ -3,16 +3,35 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FiHome, FiList, FiBarChart2, FiSettings, FiLogOut, FiMenu } from 'react-icons/fi';
 
-const Layout = () => {
-  const { user, logout } = useAuth();
+const Layout = ({ children }) => {
+  const { user, logout, isAdmin, isMerchant } = useAuth();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
-  const navigation = [
-    { name: 'Dashboard', to: '/', icon: FiHome },
-    { name: 'Transactions', to: '/transactions', icon: FiList },
-    { name: 'Analytics', to: '/analytics', icon: FiBarChart2 },
-    { name: 'Paramètres', to: '/settings', icon: FiSettings },
-  ];
+  // Navigation basée sur le rôle
+  const getNavigation = () => {
+    if (isAdmin) {
+      return [
+        { name: 'Dashboard', to: '/admin/dashboard', icon: FiHome },
+        { name: 'Paramètres', to: '/settings', icon: FiSettings },
+      ];
+    } else if (isMerchant) {
+      return [
+        { name: 'Dashboard', to: '/', icon: FiHome },
+        { name: 'Transactions', to: '/transactions', icon: FiList },
+        { name: 'Analytics', to: '/analytics', icon: FiBarChart2 },
+        { name: 'Paramètres', to: '/settings', icon: FiSettings },
+      ];
+    } else {
+      // Customer
+      return [
+        { name: 'Dashboard', to: '/customer/dashboard', icon: FiHome },
+        { name: 'Paiements', to: '/client/payer', icon: FiList },
+        { name: 'Paramètres', to: '/settings', icon: FiSettings },
+      ];
+    }
+  };
+
+  const navigation = getNavigation();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -107,7 +126,7 @@ const Layout = () => {
           </header>
 
           <main className="p-4 sm:p-6 lg:p-8">
-            <Outlet />
+            {children || <Outlet />}
           </main>
         </div>
       </div>
