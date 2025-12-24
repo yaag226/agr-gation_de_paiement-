@@ -17,7 +17,18 @@ const Login = () => {
     const result = await login(formData.email, formData.password);
 
     if (result.success) {
-      navigate('/');
+      // Redirection basée sur le rôle de l'utilisateur
+      const userRole = result.user?.role;
+
+      if (userRole === 'admin') {
+        navigate('/admin/dashboard');
+      } else if (userRole === 'customer') {
+        navigate('/customer/dashboard');
+      } else if (userRole === 'merchant') {
+        navigate('/');
+      } else {
+        navigate('/');
+      }
     } else {
       setError(result.error);
     }

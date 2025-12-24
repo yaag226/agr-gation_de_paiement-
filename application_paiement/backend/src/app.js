@@ -11,6 +11,7 @@ const transactionRoutes = require('./routes/transaction.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const aggregationRoutes = require('./routes/aggregation.routes');
+const adminRoutes = require('./routes/admin.routes');
 
 const app = express();
 
@@ -58,6 +59,7 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/aggregation', aggregationRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 404 handler
 app.use((req, res) => {

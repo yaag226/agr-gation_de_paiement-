@@ -178,6 +178,27 @@ const seedData = async () => {
     await merchant3User.save();
     console.log('✅ Merchant 3 created');
 
+    // Create customer users for testing
+    const customer1 = await User.create({
+      name: 'Jean Dupont',
+      email: 'customer1@test.com',
+      password: 'Customer123!',
+      role: 'customer',
+      phone: '+33687654321',
+      isActive: true
+    });
+    console.log('✅ Customer 1 created');
+
+    const customer2 = await User.create({
+      name: 'Marie Martin',
+      email: 'customer2@test.com',
+      password: 'Customer123!',
+      role: 'customer',
+      phone: '+33687654322',
+      isActive: true
+    });
+    console.log('✅ Customer 2 created');
+
     const transactions = [];
     const statuses = ['completed', 'completed', 'completed', 'pending', 'failed'];
     const providers = ['stripe', 'paypal', 'stripe'];
@@ -278,6 +299,7 @@ const seedData = async () => {
     console.log('📊 Summary:');
     console.log('   - 1 Admin user');
     console.log('   - 3 Merchant users');
+    console.log('   - 2 Customer users');
     console.log('   - 23 Test transactions');
     console.log('\n🔑 Test Credentials:');
     console.log('\n   Admin:');
@@ -292,6 +314,12 @@ const seedData = async () => {
     console.log('\n   Merchant 3 (Eco Products):');
     console.log('   Email: merchant3@test.com');
     console.log('   Password: Merchant123!');
+    console.log('\n   Customer 1:');
+    console.log('   Email: customer1@test.com');
+    console.log('   Password: Customer123!');
+    console.log('\n   Customer 2:');
+    console.log('   Email: customer2@test.com');
+    console.log('   Password: Customer123!');
 
   } catch (error) {
     console.error('❌ Seeding error:', error);
