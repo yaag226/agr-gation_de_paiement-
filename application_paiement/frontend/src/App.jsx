@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
-import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -45,12 +44,23 @@ const PublicRoute = ({ children }) => {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Page d'accueil publique */}
-      <Route path="/" element={<Home />} />
-
       {/* Routes publiques d'authentification */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <PublicRoute>
+            <Register />
+          </PublicRoute>
+        }
+      />
 
       {/* Routes publiques pour les clients */}
       <Route path="/client/payer" element={<ClientPayment />} />
@@ -60,7 +70,7 @@ function AppRoutes() {
 
       {/* Routes privées pour les marchands */}
       <Route
-        path="/merchant"
+        path="/"
         element={
           <PrivateRoute>
             <Layout />

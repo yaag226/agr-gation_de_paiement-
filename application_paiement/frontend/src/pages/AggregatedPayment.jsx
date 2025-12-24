@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import axios from 'axios';
 
 const AggregatedPayment = () => {
@@ -143,43 +142,17 @@ const AggregatedPayment = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
-      {/* Header */}
-      <nav className="bg-white shadow-sm border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <Link to="/" className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">💳</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">PayAggregate</h1>
-                <p className="text-xs text-gray-500">Agrégation de paiements</p>
-              </div>
-            </Link>
-            <Link to="/" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-              ← Retour
-            </Link>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">
+              💳 Agrégation de Paiements
+            </h1>
+            <p className="text-xl text-gray-600">
+              Payez plusieurs factures en une seule transaction
+            </p>
           </div>
-        </div>
-      </nav>
-
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 mb-6 border border-gray-100">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                Agrégation de Paiements
-              </h1>
-              <p className="text-xl text-gray-600">
-                Payez plusieurs factures en une seule transaction
-              </p>
-            </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Informations client */}
