@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { transactionAPI } from '../services/api';
 import { FiCreditCard, FiDollarSign, FiCheckCircle, FiXCircle, FiClock } from 'react-icons/fi';
 import { formatCurrency } from '../utils/currencyFormatter';
 
@@ -23,13 +23,15 @@ const CustomerDashboard = () => {
   const loadTransactions = async () => {
     try {
       setLoading(true);
-      // Charger les transactions du client
-      const response = await transactionAPI.getAll({
-        customerEmail: user?.email,
-        limit: 50
+      // Charger les transactions du client via l'API publique
+      const response = await axios.get('http://localhost:5000/api/payment/historique', {
+        params: {
+          email: user?.email,
+          limit: 50
+        }
       });
 
-      const txs = response.data.data || [];
+      const txs = response.data.data.transactions || [];
       setTransactions(txs);
 
       // Calculer les statistiques
@@ -91,6 +93,9 @@ const CustomerDashboard = () => {
     const names = {
       orange_money: 'Orange Money',
       mtn_money: 'MTN Mobile Money',
+      moov_money: 'Moov Money',
+      coris_bank: 'Coris Bank',
+      ecobank: 'Ecobank',
       wave: 'Wave',
       stripe: 'Stripe',
       paypal: 'PayPal'
