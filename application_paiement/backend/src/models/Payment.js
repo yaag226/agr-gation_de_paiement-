@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 const paymentSchema = new mongoose.Schema({
   transactionId: {
     type: String,
-    unique: true,
-    required: true
+    unique: true
+    // Généré automatiquement par le hook pre('save'), pas besoin de required: true
   },
   client: {
     type: mongoose.Schema.Types.ObjectId,
