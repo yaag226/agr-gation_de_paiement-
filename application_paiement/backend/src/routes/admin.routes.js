@@ -16,4 +16,11 @@ router.get('/users/:id', adminController.getUserById);
 router.put('/users/:id', adminController.updateUser);
 router.delete('/users/:id', adminController.deleteUser);
 
+// Merchant management
+router.get('/merchants', adminController.getAllMerchants);
+router.get('/merchants/:id', adminController.getMerchantById);
+router.put('/merchants/:id', adminController.updateMerchant);
+router.post('/merchants/:id/verify', adminController.verifyMerchant);
+router.post('/merchants/:id/toggle-status', adminController.toggleMerchantStatus);
+
 module.exports = router;

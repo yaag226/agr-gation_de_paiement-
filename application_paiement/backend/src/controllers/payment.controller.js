@@ -44,13 +44,36 @@ exports.processPayment = async (req, res) => {
       merchant = await Merchant.findById(merchantId);
     } else {
       // Si pas de merchantId, prendre le premier marchand actif
-      merchant = await Merchant.findOne({ isActive: true, isVerified: true });
+      // En dev/test, on accepte les merchants non vérifiés
+      const isProduction = process.env.NODE_ENV === 'production';
+      if (isProduction) {
+        merchant = await Merchant.findOne({ isActive: true, isVerified: true });
+      } else {
+        merchant = await Merchant.findOne({ isActive: true });
+      }
     }
 
     if (!merchant) {
       return res.status(404).json({
         success: false,
         message: 'Aucun marchand disponible'
+      });
+    }
+
+    // Vérifier que le merchant est actif
+    if (!merchant.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: 'Le compte marchand n\'est pas actif'
+      });
+    }
+
+    // En production, vérifier aussi la vérification
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (isProduction && !merchant.isVerified) {
+      return res.status(403).json({
+        success: false,
+        message: 'Le compte marchand n\'est pas vérifié'
       });
     }
 
