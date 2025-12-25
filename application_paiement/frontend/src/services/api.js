@@ -1,14 +1,16 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = 'http://localhost:5000/api';
 
+// Instance Axios
 const api = axios.create({
   baseURL: API_URL,
   headers: {
-    'Content-Type': 'application/json',
-  },
+    'Content-Type': 'application/json'
+  }
 });
 
+// Intercepteur pour ajouter le token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -17,11 +19,10 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
+// Intercepteur pour gérer les erreurs
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -34,54 +35,35 @@ api.interceptors.response.use(
   }
 );
 
+// Auth
 export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
-  getMe: () => api.get('/auth/me'),
-  updateProfile: (data) => api.put('/auth/update-profile', data),
-  changePassword: (data) => api.put('/auth/change-password', data),
+  getProfile: () => api.get('/auth/profile')
 };
 
+// Client
+export const clientAPI = {
+  createPayment: (data) => api.post('/client/payments', data),
+  getPayments: (params) => api.get('/client/payments', { params }),
+  getStats: () => api.get('/client/stats'),
+  getMerchants: () => api.get('/client/merchants')
+};
+
+// Merchant
 export const merchantAPI = {
-  getAll: (params) => api.get('/merchants', { params }),
-  getById: (id) => api.get(`/merchants/${id}`),
-  update: (id, data) => api.put(`/merchants/${id}`, data),
-  addProviderConfig: (data) => api.post('/merchants/provider-config', data),
-  updateProviderConfig: (provider, data) => api.put(`/merchants/provider-config/${provider}`, data),
-  removeProviderConfig: (provider) => api.delete(`/merchants/provider-config/${provider}`),
-  getStats: () => api.get('/merchants/stats'),
+  getPayments: (params) => api.get('/merchant/payments', { params }),
+  getDashboard: () => api.get('/merchant/dashboard'),
+  getStats: (params) => api.get('/merchant/stats', { params })
 };
 
-export const transactionAPI = {
-  initiate: (data) => api.post('/transactions/initiate', data),
-  getAll: (params) => api.get('/transactions', { params }),
-  getById: (id) => api.get(`/transactions/${id}`),
-  refund: (id, data) => api.post(`/transactions/${id}/refund`, data),
-};
-
-export const analyticsAPI = {
-  getDashboard: () => api.get('/analytics/dashboard'),
-  getRevenue: (params) => api.get('/analytics/revenue', { params }),
-  getProviders: () => api.get('/analytics/providers'),
-  export: (params) => api.get('/analytics/export', { params }),
-};
-
+// Admin
 export const adminAPI = {
-  // Users
-  getAllUsers: () => api.get('/admin/users'),
-  getUserById: (id) => api.get(`/admin/users/${id}`),
-  updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
-  deleteUser: (id) => api.delete(`/admin/users/${id}`),
-
-  // Merchants
-  getAllMerchants: () => api.get('/admin/merchants'),
-  getMerchantById: (id) => api.get(`/admin/merchants/${id}`),
-  updateMerchant: (id, data) => api.put(`/admin/merchants/${id}`, data),
-  verifyMerchant: (id) => api.post(`/admin/merchants/${id}/verify`),
-  toggleMerchantStatus: (id) => api.post(`/admin/merchants/${id}/toggle-status`),
-
-  // Stats
-  getStats: () => api.get('/admin/stats'),
+  getUsers: (params) => api.get('/admin/users', { params }),
+  toggleUserStatus: (id) => api.patch(`/admin/users/${id}/toggle-status`),
+  getAllPayments: (params) => api.get('/admin/payments', { params }),
+  getDashboard: () => api.get('/admin/dashboard'),
+  getGlobalStats: () => api.get('/admin/stats')
 };
 
 export default api;

@@ -1,376 +1,819 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { FiUsers, FiDollarSign, FiActivity, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
 import { adminAPI } from '../services/api';
+import Navbar from '../components/Navbar';
+import StatCard from '../components/StatCard';
+import LoadingSpinner from '../components/LoadingSpinner';
+import {
+  Users,
+  TrendingUp,
+  Activity,
+  DollarSign,
+  ShoppingBag,
+  UserCheck,
+  UserX,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Shield,
+  Store,
+  Search,
+  Filter,
+  MoreVertical
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalMerchants: 0,
-    totalCustomers: 0,
-    totalTransactions: 0,
-    totalRevenue: 0,
-    activeUsers: 0
-  });
+  const [dashboard, setDashboard] = useState(null);
   const [users, setUsers] = useState([]);
-  const [merchants, setMerchants] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [userFilter, setUserFilter] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    loadDashboardData();
+    loadData();
   }, []);
 
-  const loadDashboardData = async () => {
+  const loadData = async () => {
     try {
-      setLoading(true);
-      // Charger les utilisateurs, marchands et statistiques
-      const [usersRes, merchantsRes, statsRes] = await Promise.all([
-        adminAPI.getAllUsers(),
-        adminAPI.getAllMerchants(),
-        adminAPI.getStats()
+      const [dashboardRes, usersRes, paymentsRes] = await Promise.all([
+        adminAPI.getDashboard(),
+        adminAPI.getUsers(),
+        adminAPI.getAllPayments()
       ]);
 
-      const allUsers = usersRes.data.data || [];
-      const allMerchants = merchantsRes.data.data || [];
-      const statsData = statsRes.data.data || {};
-
-      setUsers(allUsers);
-      setMerchants(allMerchants);
-
-      // Calculer les statistiques des clients
-      const totalCustomers = allUsers.filter(u => u.role === 'customer').length;
-
-      setStats({
-        totalUsers: statsData.totalUsers || allUsers.length,
-        totalMerchants: statsData.totalMerchants || 0,
-        totalCustomers,
-        activeUsers: statsData.activeUsers || 0,
-        totalTransactions: statsData.totalTransactions || 0,
-        totalRevenue: statsData.totalRevenue || 0
-      });
+      setDashboard(dashboardRes.data.dashboard);
+      setUsers(usersRes.data.users);
+      setPayments(paymentsRes.data.payments);
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
+      console.error('Erreur:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleUserStatus = async (userId, currentStatus) => {
+  const toggleUserStatus = async (userId) => {
     try {
-      await adminAPI.updateUser(userId, { isActive: !currentStatus });
-      await loadDashboardData();
+      await adminAPI.toggleUserStatus(userId);
+      loadData();
     } catch (error) {
-      console.error('Error updating user status:', error);
-      alert('Erreur lors de la mise à jour du statut');
+      console.error('Erreur:', error);
     }
   };
-
-  const verifyMerchant = async (merchantId) => {
-    try {
-      await adminAPI.verifyMerchant(merchantId);
-      alert('Marchand vérifié avec succès!');
-      await loadDashboardData();
-    } catch (error) {
-      console.error('Error verifying merchant:', error);
-      alert('Erreur lors de la vérification du marchand');
-    }
-  };
-
-  const toggleMerchantStatus = async (merchantId) => {
-    try {
-      await adminAPI.toggleMerchantStatus(merchantId);
-      await loadDashboardData();
-    } catch (error) {
-      console.error('Error toggling merchant status:', error);
-      alert('Erreur lors de la mise à jour du statut du marchand');
-    }
-  };
-
-  const StatCard = ({ title, value, icon: Icon, color = 'primary' }) => (
-    <div className="card hover:scale-105 transition-transform duration-200">
-      <div className="flex items-center justify-between">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs sm:text-sm text-gray-600 mb-1 truncate">{title}</p>
-          <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{value}</p>
-        </div>
-        <div className={`p-2 sm:p-3 bg-${color}-100 rounded-lg flex-shrink-0 ml-2`}>
-          <Icon className={`w-5 h-5 sm:w-6 sm:h-6 text-${color}-600`} />
-        </div>
-      </div>
-    </div>
-  );
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600">Chargement...</div>
-      </div>
+      <>
+        <Navbar />
+        <LoadingSpinner message="Chargement du tableau de bord admin..." />
+      </>
     );
   }
 
+  const COLORS = ['#EF2B2D', '#009E49', '#FCD116', '#0EA5E9'];
+
+  const activityChartData = dashboard.charts.recentActivity.map((item) => ({
+    date: format(new Date(item._id), 'dd MMM', { locale: fr }),
+    montant: item.total,
+    transactions: item.count
+  }));
+
+  const paymentMethodsData = dashboard.charts.paymentsByMethod.map((method) => ({
+    name: method._id,
+    value: method.total,
+    count: method.count
+  }));
+
+  const filteredUsers = users.filter((user) => {
+    const matchRole = !roleFilter || user.role === roleFilter;
+    const matchSearch =
+      !searchTerm ||
+      user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchRole && matchSearch;
+  });
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard Administrateur</h1>
-        <p className="text-gray-600">Bienvenue, {user?.name}</p>
-      </div>
+    <>
+      <Navbar />
+      <div style={styles.container}>
+        {/* Header */}
+        <div style={styles.header}>
+          <div>
+            <h1 style={styles.title}>
+              <Shield size={32} style={{ verticalAlign: 'middle' }} />
+              {' '}Tableau de bord Administrateur
+            </h1>
+            <p style={styles.subtitle}>Vue d'ensemble complète de la plateforme</p>
+          </div>
+        </div>
 
-      {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Utilisateurs"
-          value={stats.totalUsers}
-          icon={FiUsers}
-          color="primary"
-        />
-        <StatCard
-          title="Marchands"
-          value={stats.totalMerchants}
-          icon={FiDollarSign}
-          color="green"
-        />
-        <StatCard
-          title="Transactions"
-          value={stats.totalTransactions}
-          icon={FiActivity}
-          color="blue"
-        />
-        <StatCard
-          title="Revenu Total"
-          value={`${stats.totalRevenue.toLocaleString()} XOF`}
-          icon={FiCheckCircle}
-          color="purple"
-        />
-      </div>
-
-      {/* Onglets */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+        {/* Onglets */}
+        <div style={styles.tabs}>
           <button
             onClick={() => setActiveTab('overview')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'overview'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
+            style={activeTab === 'overview' ? styles.tabActive : styles.tab}
           >
+            <Activity size={18} />
             Vue d'ensemble
           </button>
           <button
             onClick={() => setActiveTab('users')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'users'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
+            style={activeTab === 'users' ? styles.tabActive : styles.tab}
           >
+            <Users size={18} />
             Utilisateurs ({users.length})
           </button>
           <button
-            onClick={() => setActiveTab('merchants')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'merchants'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
+            onClick={() => setActiveTab('transactions')}
+            style={activeTab === 'transactions' ? styles.tabActive : styles.tab}
           >
-            Marchands ({merchants.length})
+            <TrendingUp size={18} />
+            Transactions ({payments.length})
           </button>
-        </nav>
-      </div>
-
-      {/* Contenu des onglets */}
-      {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Répartition des utilisateurs</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Administrateurs</span>
-                <span className="font-semibold">{users.filter(u => u.role === 'admin').length}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Marchands</span>
-                <span className="font-semibold">{stats.totalMerchants}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Clients</span>
-                <span className="font-semibold">{stats.totalCustomers}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Statut des utilisateurs</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Actifs</span>
-                <span className="font-semibold text-green-600">{stats.activeUsers}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Inactifs</span>
-                <span className="font-semibold text-red-600">{stats.totalUsers - stats.activeUsers}</span>
-              </div>
-            </div>
-          </div>
         </div>
-      )}
 
-      {activeTab === 'users' && (
-        <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Liste des utilisateurs</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nom
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Rôle
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Statut
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {users.map((u) => (
-                  <tr key={u._id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{u.name}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{u.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`badge ${
-                        u.role === 'admin' ? 'badge-danger' :
-                        u.role === 'merchant' ? 'badge-primary' :
-                        'badge-info'
-                      }`}>
-                        {u.role}
+        {/* VUE D'ENSEMBLE */}
+        {activeTab === 'overview' && (
+          <>
+            {/* Statistiques principales */}
+            <div className="grid grid-4">
+              <StatCard
+                icon={Users}
+                title="Total utilisateurs"
+                value={dashboard.users.total}
+                color="var(--bf-green)"
+              />
+              <StatCard
+                icon={ShoppingBag}
+                title="Total marchands"
+                value={dashboard.users.merchants}
+                color="var(--bf-red)"
+              />
+              <StatCard
+                icon={Activity}
+                title="Transactions"
+                value={dashboard.payments.total}
+                color="var(--bf-yellow)"
+              />
+              <StatCard
+                icon={DollarSign}
+                title="Volume traité"
+                value={dashboard.financial.totalProcessed.toLocaleString()}
+                suffix="FCFA"
+                color="var(--status-success)"
+              />
+            </div>
+
+            {/* Statistiques détaillées */}
+            <div className="grid grid-2">
+              {/* Utilisateurs */}
+              <div className="card">
+                <h2 style={styles.sectionTitle}>Statistiques utilisateurs</h2>
+                <div style={styles.statsGrid}>
+                  <div style={styles.statItem}>
+                    <Users size={24} color="var(--bf-green)" />
+                    <div>
+                      <p style={styles.statValue}>{dashboard.users.clients}</p>
+                      <p style={styles.statLabel}>Clients</p>
+                    </div>
+                  </div>
+                  <div style={styles.statItem}>
+                    <Store size={24} color="var(--bf-red)" />
+                    <div>
+                      <p style={styles.statValue}>{dashboard.users.merchants}</p>
+                      <p style={styles.statLabel}>Marchands</p>
+                    </div>
+                  </div>
+                  <div style={styles.statItem}>
+                    <UserCheck size={24} color="var(--status-success)" />
+                    <div>
+                      <p style={styles.statValue}>{dashboard.users.active}</p>
+                      <p style={styles.statLabel}>Actifs</p>
+                    </div>
+                  </div>
+                  <div style={styles.statItem}>
+                    <UserX size={24} color="var(--text-secondary)" />
+                    <div>
+                      <p style={styles.statValue}>
+                        {dashboard.users.total - dashboard.users.active}
+                      </p>
+                      <p style={styles.statLabel}>Inactifs</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Paiements */}
+              <div className="card">
+                <h2 style={styles.sectionTitle}>Statistiques paiements</h2>
+                <div style={styles.statsGrid}>
+                  <div style={styles.statItem}>
+                    <CheckCircle size={24} color="var(--status-success)" />
+                    <div>
+                      <p style={styles.statValue}>{dashboard.payments.success}</p>
+                      <p style={styles.statLabel}>Réussis</p>
+                    </div>
+                  </div>
+                  <div style={styles.statItem}>
+                    <XCircle size={24} color="var(--status-error)" />
+                    <div>
+                      <p style={styles.statValue}>{dashboard.payments.failed}</p>
+                      <p style={styles.statLabel}>Échoués</p>
+                    </div>
+                  </div>
+                  <div style={styles.statItem}>
+                    <Clock size={24} color="var(--status-pending)" />
+                    <div>
+                      <p style={styles.statValue}>{dashboard.payments.pending}</p>
+                      <p style={styles.statLabel}>En attente</p>
+                    </div>
+                  </div>
+                  <div style={styles.statItem}>
+                    <TrendingUp size={24} color="var(--bf-green)" />
+                    <div>
+                      <p style={styles.statValue}>{dashboard.payments.successRate}%</p>
+                      <p style={styles.statLabel}>Taux réussite</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Graphiques */}
+            <div className="grid grid-2">
+              {/* Évolution des transactions */}
+              <div className="card">
+                <h2 style={styles.sectionTitle}>
+                  Évolution des transactions (30 jours)
+                </h2>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={activityChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                    <XAxis dataKey="date" stroke="var(--text-secondary)" />
+                    <YAxis stroke="var(--text-secondary)" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'var(--bg-primary)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value, name) => [
+                        name === 'montant'
+                          ? `${value.toLocaleString()} FCFA`
+                          : value,
+                        name === 'montant' ? 'Montant' : 'Transactions'
+                      ]}
+                    />
+                    <Legend />
+                    <Bar dataKey="montant" fill="var(--bf-green)" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="transactions" fill="var(--bf-red)" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Méthodes de paiement */}
+              <div className="card">
+                <h2 style={styles.sectionTitle}>Répartition par méthode</h2>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={paymentMethodsData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) =>
+                        `${name} (${(percent * 100).toFixed(0)}%)`
+                      }
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {paymentMethodsData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value) => `${value.toLocaleString()} FCFA`}
+                      contentStyle={{
+                        backgroundColor: 'var(--bg-primary)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '8px'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Top marchands */}
+            <div className="card">
+              <h2 style={styles.sectionTitle}>Top 5 Marchands</h2>
+              <div style={styles.merchantsList}>
+                {dashboard.topMerchants.map((merchant, index) => (
+                  <div key={merchant._id} style={styles.merchantItem}>
+                    <div style={styles.merchantRank}>#{index + 1}</div>
+                    <Store size={20} color="var(--bf-green)" />
+                    <div style={styles.merchantInfo}>
+                      <p style={styles.merchantName}>{merchant.businessName}</p>
+                      <p style={styles.merchantStats}>
+                        {merchant.transactionCount} transactions
+                      </p>
+                    </div>
+                    <div style={styles.merchantAmount}>
+                      <span className="amount-fcfa">
+                        {merchant.totalReceived.toLocaleString()}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {u.isActive ? (
-                        <span className="flex items-center text-green-600">
-                          <FiCheckCircle className="mr-1" /> Actif
-                        </span>
-                      ) : (
-                        <span className="flex items-center text-red-600">
-                          <FiXCircle className="mr-1" /> Inactif
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button
-                        onClick={() => toggleUserStatus(u._id, u.isActive)}
-                        className={`btn ${u.isActive ? 'btn-danger' : 'btn-success'} btn-sm`}
-                      >
-                        {u.isActive ? 'Désactiver' : 'Activer'}
-                      </button>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+              </div>
+            </div>
 
-      {activeTab === 'merchants' && (
-        <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Liste des marchands</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nom
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Utilisateur
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Solde
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Vérifié
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Statut
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {merchants.map((m) => (
-                  <tr key={m._id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{m.businessName}</div>
-                      <div className="text-xs text-gray-500">{m.description || 'N/A'}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{m.user?.name}</div>
-                      <div className="text-xs text-gray-500">{m.user?.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-semibold text-gray-900">
-                        {m.balance?.toLocaleString() || 0} XOF
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {m.isVerified ? (
-                        <span className="badge badge-success">Vérifié</span>
-                      ) : (
-                        <span className="badge badge-warning">Non vérifié</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`badge ${m.isActive ? 'badge-success' : 'badge-danger'}`}>
-                        {m.isActive ? 'Actif' : 'Inactif'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <div className="flex gap-2">
-                        {!m.isVerified && (
-                          <button
-                            onClick={() => verifyMerchant(m._id)}
-                            className="btn btn-primary btn-sm"
-                            title="Vérifier ce marchand"
-                          >
-                            Vérifier
-                          </button>
+            {/* Transactions récentes */}
+            <div className="card">
+              <h2 style={styles.sectionTitle}>Dernières transactions</h2>
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Client</th>
+                      <th>Marchand</th>
+                      <th>Montant</th>
+                      <th>Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dashboard.recentTransactions.slice(0, 10).map((transaction) => (
+                      <tr key={transaction._id}>
+                        <td>
+                          {format(
+                            new Date(transaction.createdAt),
+                            'dd MMM yyyy HH:mm',
+                            { locale: fr }
+                          )}
+                        </td>
+                        <td>
+                          {transaction.client.firstName} {transaction.client.lastName}
+                        </td>
+                        <td>{transaction.merchant.businessName}</td>
+                        <td>
+                          <span className="amount-fcfa">
+                            {transaction.amount.toLocaleString()}
+                          </span>
+                        </td>
+                        <td>
+                          <StatusBadge status={transaction.status} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* GESTION DES UTILISATEURS */}
+        {activeTab === 'users' && (
+          <>
+            {/* Filtres */}
+            <div className="card" style={styles.filters}>
+              <div style={styles.searchBar}>
+                <Search size={18} style={styles.searchIcon} />
+                <input
+                  type="text"
+                  placeholder="Rechercher un utilisateur..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={styles.searchInput}
+                />
+              </div>
+
+              <div style={styles.roleFilters}>
+                <Filter size={18} />
+                <button
+                  onClick={() => setRoleFilter('')}
+                  style={roleFilter === '' ? styles.filterActive : styles.filterButton}
+                >
+                  Tous
+                </button>
+                <button
+                  onClick={() => setRoleFilter('client')}
+                  style={
+                    roleFilter === 'client' ? styles.filterActive : styles.filterButton
+                  }
+                >
+                  Clients
+                </button>
+                <button
+                  onClick={() => setRoleFilter('merchant')}
+                  style={
+                    roleFilter === 'merchant' ? styles.filterActive : styles.filterButton
+                  }
+                >
+                  Marchands
+                </button>
+                <button
+                  onClick={() => setRoleFilter('admin')}
+                  style={
+                    roleFilter === 'admin' ? styles.filterActive : styles.filterButton
+                  }
+                >
+                  Admins
+                </button>
+              </div>
+            </div>
+
+            {/* Liste des utilisateurs */}
+            <div className="card">
+              <h2 style={styles.sectionTitle}>
+                Utilisateurs ({filteredUsers.length})
+              </h2>
+
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Nom complet</th>
+                      <th>Email</th>
+                      <th>Téléphone</th>
+                      <th>Rôle</th>
+                      <th>Statut</th>
+                      <th>Transactions</th>
+                      <th>Inscrit le</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredUsers.map((user) => (
+                      <tr key={user._id}>
+                        <td>
+                          <strong>
+                            {user.firstName} {user.lastName}
+                          </strong>
+                          {user.businessName && (
+                            <div style={styles.businessName}>
+                              <Store size={14} />
+                              {user.businessName}
+                            </div>
+                          )}
+                        </td>
+                        <td>{user.email}</td>
+                        <td>{user.phone}</td>
+                        <td>
+                          <RoleBadge role={user.role} />
+                        </td>
+                        <td>
+                          {user.isActive ? (
+                            <span className="badge badge-success">
+                              <UserCheck size={14} />
+                              Actif
+                            </span>
+                          ) : (
+                            <span className="badge badge-error">
+                              <UserX size={14} />
+                              Inactif
+                            </span>
+                          )}
+                        </td>
+                        <td>{user.transactionCount || 0}</td>
+                        <td>
+                          {format(new Date(user.createdAt), 'dd MMM yyyy', {
+                            locale: fr
+                          })}
+                        </td>
+                        <td>
+                          {user.role !== 'admin' && (
+                            <button
+                              onClick={() => toggleUserStatus(user._id)}
+                              className={
+                                user.isActive ? 'btn btn-outline' : 'btn btn-success'
+                              }
+                              style={{ padding: '6px 12px', fontSize: '12px' }}
+                            >
+                              {user.isActive ? 'Désactiver' : 'Activer'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* TRANSACTIONS */}
+        {activeTab === 'transactions' && (
+          <div className="card">
+            <h2 style={styles.sectionTitle}>
+              Toutes les transactions ({payments.length})
+            </h2>
+
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Transaction ID</th>
+                    <th>Date</th>
+                    <th>Client</th>
+                    <th>Marchand</th>
+                    <th>Méthode</th>
+                    <th>Montant</th>
+                    <th>Frais</th>
+                    <th>Statut</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payments.map((payment) => (
+                    <tr key={payment._id}>
+                      <td style={styles.transactionId}>{payment.transactionId}</td>
+                      <td>
+                        {format(
+                          new Date(payment.createdAt),
+                          'dd MMM yyyy HH:mm',
+                          { locale: fr }
                         )}
-                        <button
-                          onClick={() => toggleMerchantStatus(m._id)}
-                          className={`btn ${m.isActive ? 'btn-danger' : 'btn-success'} btn-sm`}
-                          title={m.isActive ? 'Désactiver ce marchand' : 'Activer ce marchand'}
-                        >
-                          {m.isActive ? 'Désactiver' : 'Activer'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                      <td>
+                        {payment.client.firstName} {payment.client.lastName}
+                      </td>
+                      <td>{payment.merchant.businessName}</td>
+                      <td>{payment.paymentMethod}</td>
+                      <td>
+                        <span className="amount-fcfa">
+                          {payment.amount.toLocaleString()}
+                        </span>
+                      </td>
+                      <td style={{ color: 'var(--status-error)' }}>
+                        {payment.fees.toLocaleString()} FCFA
+                      </td>
+                      <td>
+                        <StatusBadge status={payment.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
+};
+
+const StatusBadge = ({ status }) => {
+  const config = {
+    SUCCESS: { icon: CheckCircle, label: 'Réussi', className: 'badge-success' },
+    FAILED: { icon: XCircle, label: 'Échoué', className: 'badge-error' },
+    PENDING: { icon: Clock, label: 'En attente', className: 'badge-pending' }
+  };
+
+  const { icon: Icon, label, className } = config[status] || config.PENDING;
+
+  return (
+    <span className={`badge ${className}`}>
+      <Icon size={14} />
+      {label}
+    </span>
+  );
+};
+
+const RoleBadge = ({ role }) => {
+  const config = {
+    admin: { label: '👑 Admin', color: 'var(--bf-red)' },
+    merchant: { label: '🏪 Marchand', color: 'var(--bf-green)' },
+    client: { label: '👤 Client', color: 'var(--bf-yellow)' }
+  };
+
+  const { label, color } = config[role] || config.client;
+
+  return (
+    <span
+      style={{
+        padding: '4px 12px',
+        borderRadius: '20px',
+        fontSize: '12px',
+        fontWeight: '600',
+        background: `${color}20`,
+        color: color
+      }}
+    >
+      {label}
+    </span>
+  );
+};
+
+const styles = {
+  container: {
+    padding: '32px',
+    maxWidth: '1600px',
+    margin: '0 auto'
+  },
+  header: {
+    marginBottom: '32px'
+  },
+  title: {
+    fontSize: '32px',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+    marginBottom: '4px'
+  },
+  subtitle: {
+    fontSize: '16px',
+    color: 'var(--text-secondary)'
+  },
+  tabs: {
+    display: 'flex',
+    gap: '8px',
+    marginBottom: '32px',
+    borderBottom: '2px solid var(--border-color)',
+    paddingBottom: '8px'
+  },
+  tab: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '12px 24px',
+    background: 'transparent',
+    border: 'none',
+    borderRadius: '8px 8px 0 0',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600',
+    color: 'var(--text-secondary)',
+    transition: 'all 0.2s ease'
+  },
+  tabActive: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '12px 24px',
+    background: 'var(--bf-green)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px 8px 0 0',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600'
+  },
+  sectionTitle: {
+    fontSize: '20px',
+    fontWeight: '700',
+    marginBottom: '24px',
+    color: 'var(--text-primary)'
+  },
+  statsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: '16px'
+  },
+  statItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+    padding: '16px',
+    background: 'var(--bg-secondary)',
+    borderRadius: '12px'
+  },
+  statValue: {
+    fontSize: '24px',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+    marginBottom: '4px'
+  },
+  statLabel: {
+    fontSize: '14px',
+    color: 'var(--text-secondary)'
+  },
+  merchantsList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px'
+  },
+  merchantItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+    padding: '16px',
+    background: 'var(--bg-secondary)',
+    borderRadius: '12px'
+  },
+  merchantRank: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    background: 'var(--bf-yellow)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '16px',
+    fontWeight: '700'
+  },
+  merchantInfo: {
+    flex: 1
+  },
+  merchantName: {
+    fontSize: '16px',
+    fontWeight: '600',
+    color: 'var(--text-primary)',
+    marginBottom: '4px'
+  },
+  merchantStats: {
+    fontSize: '14px',
+    color: 'var(--text-secondary)'
+  },
+  merchantAmount: {
+    fontSize: '18px',
+    fontWeight: '700'
+  },
+  filters: {
+    display: 'flex',
+    gap: '16px',
+    alignItems: 'center',
+    flexWrap: 'wrap'
+  },
+  searchBar: {
+    position: 'relative',
+    flex: 1,
+    minWidth: '300px'
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '16px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    color: 'var(--text-secondary)'
+  },
+  searchInput: {
+    width: '100%',
+    padding: '12px 16px 12px 48px',
+    border: '2px solid var(--border-color)',
+    borderRadius: '8px',
+    fontSize: '14px'
+  },
+  roleFilters: {
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'center'
+  },
+  filterButton: {
+    padding: '8px 16px',
+    background: 'var(--bg-secondary)',
+    border: '2px solid transparent',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600',
+    transition: 'all 0.2s ease'
+  },
+  filterActive: {
+    padding: '8px 16px',
+    background: 'var(--bf-green)',
+    color: 'white',
+    border: '2px solid var(--bf-green)',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600'
+  },
+  businessName: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
+    marginTop: '4px'
+  },
+  transactionId: {
+    fontFamily: 'monospace',
+    fontSize: '12px',
+    color: 'var(--text-secondary)'
+  }
 };
 
 export default AdminDashboard;

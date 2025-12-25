@@ -1,262 +1,498 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { clientAPI } from '../services/api';
+import Navbar from '../components/Navbar';
+import StatCard from '../components/StatCard';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { 
+  Wallet, 
+  TrendingUp, 
+  Activity, 
+  Plus,
+  Search,
+  Filter,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Store
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 const ClientDashboard = () => {
-  const [phone, setPhone] = useState('');
-  const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [stats, setStats] = useState({
-    total: 0,
-    completed: 0,
-    failed: 0,
-    totalAmount: 0
-  });
+  const [stats, setStats] = useState(null);
+  const [payments, setPayments] = useState([]);
+  const [merchants, setMerchants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchTransactions = async () => {
-    if (!phone) {
-      setError('Veuillez entrer un numéro de téléphone');
-      return;
-    }
+  useEffect(() => {
+    loadData();
+  }, []);
 
-    setLoading(true);
-    setError(null);
-
+  const loadData = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/payment/historique', {
-        params: { phone, limit: 50 }
-      });
+      const [statsRes, paymentsRes, merchantsRes] = await Promise.all([
+        clientAPI.getStats(),
+        clientAPI.getPayments(),
+        clientAPI.getMerchants()
+      ]);
 
-      const txs = response.data.data.transactions;
-      setTransactions(txs);
-
-      // Calculer les statistiques
-      const completed = txs.filter((t) => t.status === 'completed').length;
-      const failed = txs.filter((t) => t.status === 'failed').length;
-      const totalAmount = txs
-        .filter((t) => t.status === 'completed')
-        .reduce((sum, t) => sum + t.amount, 0);
-
-      setStats({
-        total: txs.length,
-        completed,
-        failed,
-        totalAmount
-      });
-    } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la récupération des transactions');
-      setTransactions([]);
+      setStats(statsRes.data.stats);
+      setPayments(paymentsRes.data.payments);
+      setMerchants(merchantsRes.data.merchants);
+    } catch (error) {
+      console.error('Erreur:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusBadge = (status) => {
-    const badges = {
-      completed: 'bg-green-100 text-green-800',
-      failed: 'bg-red-100 text-red-800',
-      pending: 'bg-yellow-100 text-yellow-800',
-      processing: 'bg-blue-100 text-blue-800'
-    };
-    const labels = {
-      completed: '✅ Réussi',
-      failed: '❌ Échoué',
-      pending: '⏳ En attente',
-      processing: '🔄 En cours'
-    };
+  const filteredPayments = payments.filter(payment => {
+    const matchStatus = !filterStatus || payment.status === filterStatus;
+    const matchSearch = !searchTerm || 
+      payment.merchant.businessName.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchStatus && matchSearch;
+  });
 
+  if (loading) {
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${badges[status]}`}>
-        {labels[status]}
-      </span>
+      <>
+        <Navbar />
+        <LoadingSpinner message="Chargement de votre tableau de bord..." />
+      </>
     );
-  };
-
-  const getProviderIcon = (provider) => {
-    const icons = {
-      orange_money: '🟠',
-      mtn_money: '🟡',
-      wave: '🌊',
-      stripe: '💳',
-      paypal: '💙'
-    };
-    return icons[provider] || '💰';
-  };
-
-  const getProviderName = (provider) => {
-    const names = {
-      orange_money: 'Orange Money',
-      mtn_money: 'MTN Mobile Money',
-      wave: 'Wave',
-      stripe: 'Stripe',
-      paypal: 'PayPal'
-    };
-    return names[provider] || provider;
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              Dashboard Client
-            </h1>
-            <p className="text-gray-600">Consultez l'historique de vos transactions</p>
+    <>
+      <Navbar />
+      <div style={styles.container}>
+        <div style={styles.header}>
+          <div>
+            <h1 style={styles.title}>Tableau de bord Client</h1>
+            <p style={styles.subtitle}>Gérez vos paiements et transactions</p>
+          </div>
+          <button 
+            className="btn btn-success"
+            onClick={() => setShowPaymentModal(true)}
+          >
+            <Plus size={18} />
+            <span>Nouveau paiement</span>
+          </button>
+        </div>
+
+        {/* Statistiques */}
+        <div className="grid grid-4">
+          <StatCard
+            icon={Wallet}
+            title="Total dépensé"
+            value={stats?.totalSpent?.toLocaleString() || '0'}
+            suffix="FCFA"
+            color="var(--bf-green)"
+          />
+          <StatCard
+            icon={Activity}
+            title="Transactions"
+            value={stats?.byStatus?.reduce((acc, s) => acc + s.count, 0) || 0}
+            color="var(--bf-red)"
+          />
+          <StatCard
+            icon={CheckCircle}
+            title="Réussies"
+            value={stats?.byStatus?.find(s => s._id === 'SUCCESS')?.count || 0}
+            color="var(--status-success)"
+          />
+          <StatCard
+            icon={TrendingUp}
+            title="Taux de réussite"
+            value={calculateSuccessRate(stats?.byStatus)}
+            suffix="%"
+            color="var(--bf-yellow)"
+          />
+        </div>
+
+        {/* Filtres */}
+        <div className="card" style={styles.filters}>
+          <div style={styles.searchBar}>
+            <Search size={18} style={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Rechercher un marchand..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={styles.searchInput}
+            />
           </div>
 
-          {/* Recherche */}
-          <div className="mb-8">
-            <div className="flex gap-4">
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Entrez votre numéro de téléphone"
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-              <button
-                onClick={fetchTransactions}
-                disabled={loading}
-                className={`px-6 py-3 rounded-lg font-semibold text-white transition-all ${
-                  loading
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-purple-600 hover:bg-purple-700'
-                }`}
-              >
-                {loading ? 'Chargement...' : '🔍 Rechercher'}
-              </button>
-            </div>
+          <div style={styles.statusFilters}>
+            <Filter size={18} />
+            <button
+              onClick={() => setFilterStatus('')}
+              style={filterStatus === '' ? styles.filterActive : styles.filterButton}
+            >
+              Tous
+            </button>
+            <button
+              onClick={() => setFilterStatus('SUCCESS')}
+              style={filterStatus === 'SUCCESS' ? styles.filterActive : styles.filterButton}
+            >
+              Réussis
+            </button>
+            <button
+              onClick={() => setFilterStatus('FAILED')}
+              style={filterStatus === 'FAILED' ? styles.filterActive : styles.filterButton}
+            >
+              Échoués
+            </button>
+            <button
+              onClick={() => setFilterStatus('PENDING')}
+              style={filterStatus === 'PENDING' ? styles.filterActive : styles.filterButton}
+            >
+              En attente
+            </button>
           </div>
+        </div>
 
-          {/* Erreur */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-800">{error}</p>
+        {/* Liste des paiements */}
+        <div className="card">
+          <h2 style={styles.sectionTitle}>Historique des paiements</h2>
+          
+          {filteredPayments.length === 0 ? (
+            <div style={styles.emptyState}>
+              <Wallet size={48} color="var(--text-light)" />
+              <p>Aucun paiement trouvé</p>
             </div>
-          )}
-
-          {/* Statistiques */}
-          {transactions.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6">
-                <div className="text-3xl mb-2">📊</div>
-                <div className="text-2xl font-bold">{stats.total}</div>
-                <div className="text-blue-100 text-sm">Total transactions</div>
-              </div>
-
-              <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl p-6">
-                <div className="text-3xl mb-2">✅</div>
-                <div className="text-2xl font-bold">{stats.completed}</div>
-                <div className="text-green-100 text-sm">Réussies</div>
-              </div>
-
-              <div className="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-xl p-6">
-                <div className="text-3xl mb-2">❌</div>
-                <div className="text-2xl font-bold">{stats.failed}</div>
-                <div className="text-red-100 text-sm">Échouées</div>
-              </div>
-
-              <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl p-6">
-                <div className="text-3xl mb-2">💰</div>
-                <div className="text-2xl font-bold">{stats.totalAmount.toLocaleString()}</div>
-                <div className="text-purple-100 text-sm">XOF dépensés</div>
-              </div>
-            </div>
-          )}
-
-          {/* Liste des transactions */}
-          {transactions.length > 0 && (
-            <div>
-              <h2 className="text-xl font-bold text-gray-800 mb-4">
-                Historique des transactions
-              </h2>
-              <div className="space-y-4">
-                {transactions.map((transaction) => (
-                  <div
-                    key={transaction._id}
-                    className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-start gap-3">
-                        <div className="text-3xl">
-                          {getProviderIcon(transaction.provider)}
+          ) : (
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Marchand</th>
+                    <th>Méthode</th>
+                    <th>Montant</th>
+                    <th>Statut</th>
+                    <th>Transaction ID</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPayments.map(payment => (
+                    <tr key={payment._id}>
+                      <td>{format(new Date(payment.createdAt), 'dd MMM yyyy HH:mm', { locale: fr })}</td>
+                      <td>
+                        <div style={styles.merchantCell}>
+                          <Store size={16} />
+                          <span>{payment.merchant.businessName}</span>
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-800">
-                            {getProviderName(transaction.provider)}
-                          </h3>
-                          <p className="text-sm text-gray-500">
-                            {new Date(transaction.createdAt).toLocaleString('fr-FR')}
-                          </p>
-                        </div>
-                      </div>
-                      {getStatusBadge(transaction.status)}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <p className="text-sm text-gray-500">Montant</p>
-                        <p className="font-semibold text-lg">
-                          {transaction.amount.toLocaleString()} {transaction.currency}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Référence</p>
-                        <p className="font-mono text-sm">{transaction.transactionId}</p>
-                      </div>
-                    </div>
-
-                    {transaction.description && (
-                      <div className="mb-3">
-                        <p className="text-sm text-gray-500">Description</p>
-                        <p className="text-sm text-gray-700">{transaction.description}</p>
-                      </div>
-                    )}
-
-                    {transaction.paymentDetails && (
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-500 mb-1">Détails du paiement</p>
-                        <div className="text-sm text-gray-700">
-                          <p>
-                            <strong>Téléphone:</strong> {transaction.paymentDetails.phoneNumber}
-                          </p>
-                          <p>
-                            <strong>Référence:</strong> {transaction.paymentDetails.reference}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {transaction.status === 'failed' && transaction.failureReason && (
-                      <div className="mt-3 p-3 bg-red-50 rounded-lg">
-                        <p className="text-sm text-red-800">
-                          <strong>Raison de l'échec:</strong> {transaction.failureReason}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Aucune transaction */}
-          {!loading && transactions.length === 0 && phone && (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">📭</div>
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                Aucune transaction trouvée
-              </h3>
-              <p className="text-gray-500">
-                Aucune transaction n'a été trouvée pour ce numéro de téléphone.
-              </p>
+                      </td>
+                      <td>{payment.paymentMethod}</td>
+                      <td>
+                        <span className="amount-fcfa">
+                          {payment.amount.toLocaleString()}
+                        </span>
+                      </td>
+                      <td>
+                        <StatusBadge status={payment.status} />
+                      </td>
+                      <td style={styles.transactionId}>{payment.transactionId}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
       </div>
+
+      {showPaymentModal && (
+        <PaymentModal
+          merchants={merchants}
+          onClose={() => setShowPaymentModal(false)}
+          onSuccess={() => {
+            setShowPaymentModal(false);
+            loadData();
+          }}
+        />
+      )}
+    </>
+  );
+};
+
+// Composant Modal de Paiement
+const PaymentModal = ({ merchants, onClose, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    merchantId: '',
+    amount: '',
+    paymentMethod: '',
+    description: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await clientAPI.createPayment({
+        ...formData,
+        amount: parseInt(formData.amount)
+      });
+
+      if (response.data.success) {
+        setSuccess(true);
+        setTimeout(() => {
+          onSuccess();
+        }, 2000);
+      } else {
+        setError(response.data.message);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Erreur lors du paiement');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div style={styles.successMessage}>
+            <CheckCircle size={64} color="var(--status-success)" />
+            <h2>Paiement effectué !</h2>
+            <p>Votre transaction a été traitée avec succès</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 className="modal-title">Nouveau paiement</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+
+        {error && (
+          <div className="alert alert-error">
+            <XCircle size={20} />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div className="input-group">
+            <label>Marchand</label>
+            <select
+              value={formData.merchantId}
+              onChange={(e) => setFormData({ ...formData, merchantId: e.target.value })}
+              required
+            >
+              <option value="">Sélectionner un marchand</option>
+              {merchants.map(merchant => (
+                <option key={merchant._id} value={merchant._id}>
+                  {merchant.businessName} - {merchant.businessCategory}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="input-group">
+            <label>Montant (FCFA)</label>
+            <input
+              type="number"
+              min="100"
+              value={formData.amount}
+              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+              placeholder="Ex: 5000"
+              required
+            />
+          </div>
+
+          <div className="input-group">
+            <label>Méthode de paiement</label>
+            <select
+              value={formData.paymentMethod}
+              onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+              required
+            >
+              <option value="">Sélectionner</option>
+              <option value="Orange Money">🟠 Orange Money</option>
+              <option value="Moov Money">🔵 Moov Money</option>
+              <option value="Wave">💙 Wave</option>
+              <option value="Coris Money">🟡 Coris Money</option>
+              <option value="Carte Bancaire">💳 Carte Bancaire</option>
+            </select>
+          </div>
+
+          <div className="input-group">
+            <label>Description (optionnel)</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Motif du paiement..."
+            />
+          </div>
+
+          <div style={styles.modalActions}>
+            <button type="button" className="btn btn-outline" onClick={onClose}>
+              Annuler
+            </button>
+            <button type="submit" className="btn btn-success" disabled={loading}>
+              {loading ? (
+                <>
+                  <div className="loading-spinner"></div>
+                  <span>Traitement...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle size={18} />
+                  <span>Payer</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
+};
+
+// Composant Badge de statut
+const StatusBadge = ({ status }) => {
+  const config = {
+    SUCCESS: { icon: CheckCircle, label: 'Réussi', className: 'badge-success' },
+    FAILED: { icon: XCircle, label: 'Échoué', className: 'badge-error' },
+    PENDING: { icon: Clock, label: 'En attente', className: 'badge-pending' }
+  };
+
+  const { icon: Icon, label, className } = config[status] || config.PENDING;
+
+  return (
+    <span className={`badge ${className}`}>
+      <Icon size={14} />
+      {label}
+    </span>
+  );
+};
+
+// Fonction utilitaire
+const calculateSuccessRate = (byStatus) => {
+  if (!byStatus || byStatus.length === 0) return '0';
+  const total = byStatus.reduce((acc, s) => acc + s.count, 0);
+  const success = byStatus.find(s => s._id === 'SUCCESS')?.count || 0;
+  return total > 0 ? ((success / total) * 100).toFixed(1) : '0';
+};
+
+const styles = {
+  container: {
+    padding: '32px',
+    maxWidth: '1400px',
+    margin: '0 auto'
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '32px'
+  },
+  title: {
+    fontSize: '32px',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+    marginBottom: '4px'
+  },
+  subtitle: {
+    fontSize: '16px',
+    color: 'var(--text-secondary)'
+  },
+  filters: {
+    display: 'flex',
+    gap: '16px',
+    alignItems: 'center',
+    flexWrap: 'wrap'
+  },
+  searchBar: {
+    position: 'relative',
+    flex: 1,
+    minWidth: '250px'
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '16px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    color: 'var(--text-secondary)'
+  },
+  searchInput: {
+    width: '100%',
+    padding: '12px 16px 12px 48px',
+    border: '2px solid var(--border-color)',
+    borderRadius: '8px',
+    fontSize: '14px'
+  },
+  statusFilters: {
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'center'
+  },
+  filterButton: {
+    padding: '8px 16px',
+    background: 'var(--bg-secondary)',
+    border: '2px solid transparent',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600',
+    transition: 'all 0.2s ease'
+  },
+  filterActive: {
+    padding: '8px 16px',
+    background: 'var(--bf-green)',
+    color: 'white',
+    border: '2px solid var(--bf-green)',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600'
+  },
+  sectionTitle: {
+    fontSize: '20px',
+    fontWeight: '700',
+    marginBottom: '24px',
+    color: 'var(--text-primary)'
+  },
+  emptyState: {
+    textAlign: 'center',
+    padding: '60px 20px',
+    color: 'var(--text-secondary)'
+  },
+  merchantCell: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  },
+  transactionId: {
+    fontFamily: 'monospace',
+    fontSize: '12px',
+    color: 'var(--text-secondary)'
+  },
+  modalActions: {
+    display: 'flex',
+    gap: '12px',
+    marginTop: '24px'
+  },
+  successMessage: {
+    textAlign: 'center',
+    padding: '40px'
+  }
 };
 
 export default ClientDashboard;
