@@ -16,10 +16,21 @@ exports.initiateTransaction = async (req, res) => {
       });
     }
 
-    if (!merchant.isActive || !merchant.isVerified) {
+    // Vérifier que le merchant est actif
+    if (!merchant.isActive) {
       return res.status(403).json({
         success: false,
-        message: 'Merchant account is not active or verified'
+        message: 'Merchant account is not active'
+      });
+    }
+
+    // En mode production, vérifier aussi la vérification du compte
+    // En dev/test, on accepte les merchants non vérifiés
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (isProduction && !merchant.isVerified) {
+      return res.status(403).json({
+        success: false,
+        message: 'Merchant account is not verified. Please contact support.'
       });
     }
 

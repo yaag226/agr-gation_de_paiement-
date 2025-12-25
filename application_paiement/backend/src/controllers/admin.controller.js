@@ -166,3 +166,150 @@ exports.getDashboardStats = async (req, res) => {
     });
   }
 };
+
+/**
+ * Get all merchants (Admin only)
+ */
+exports.getAllMerchants = async (req, res) => {
+  try {
+    const merchants = await Merchant.find()
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      status: 'success',
+      data: merchants
+    });
+  } catch (error) {
+    console.error('Get all merchants error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch merchants'
+    });
+  }
+};
+
+/**
+ * Get merchant by ID (Admin only)
+ */
+exports.getMerchantById = async (req, res) => {
+  try {
+    const merchant = await Merchant.findById(req.params.id)
+      .populate('user', 'name email phone');
+
+    if (!merchant) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Merchant not found'
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: merchant
+    });
+  } catch (error) {
+    console.error('Get merchant by ID error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch merchant'
+    });
+  }
+};
+
+/**
+ * Verify merchant (Admin only)
+ */
+exports.verifyMerchant = async (req, res) => {
+  try {
+    const merchant = await Merchant.findByIdAndUpdate(
+      req.params.id,
+      { isVerified: true },
+      { new: true }
+    ).populate('user', 'name email');
+
+    if (!merchant) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Merchant not found'
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Merchant verified successfully',
+      data: merchant
+    });
+  } catch (error) {
+    console.error('Verify merchant error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to verify merchant'
+    });
+  }
+};
+
+/**
+ * Toggle merchant active status (Admin only)
+ */
+exports.toggleMerchantStatus = async (req, res) => {
+  try {
+    const merchant = await Merchant.findById(req.params.id);
+
+    if (!merchant) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Merchant not found'
+      });
+    }
+
+    merchant.isActive = !merchant.isActive;
+    await merchant.save();
+
+    res.status(200).json({
+      status: 'success',
+      message: `Merchant ${merchant.isActive ? 'activated' : 'deactivated'} successfully`,
+      data: merchant
+    });
+  } catch (error) {
+    console.error('Toggle merchant status error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to update merchant status'
+    });
+  }
+};
+
+/**
+ * Update merchant (Admin only)
+ */
+exports.updateMerchant = async (req, res) => {
+  try {
+    const { isActive, isVerified, businessName, description } = req.body;
+
+    const merchant = await Merchant.findByIdAndUpdate(
+      req.params.id,
+      { isActive, isVerified, businessName, description },
+      { new: true, runValidators: true }
+    ).populate('user', 'name email');
+
+    if (!merchant) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Merchant not found'
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Merchant updated successfully',
+      data: merchant
+    });
+  } catch (error) {
+    console.error('Update merchant error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to update merchant'
+    });
+  }
+};

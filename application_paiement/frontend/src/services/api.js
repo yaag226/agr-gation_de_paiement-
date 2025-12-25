@@ -66,4 +66,22 @@ export const analyticsAPI = {
   export: (params) => api.get('/analytics/export', { params }),
 };
 
+export const adminAPI = {
+  // Users
+  getAllUsers: () => api.get('/admin/users'),
+  getUserById: (id) => api.get(`/admin/users/${id}`),
+  updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
+
+  // Merchants
+  getAllMerchants: () => api.get('/admin/merchants'),
+  getMerchantById: (id) => api.get(`/admin/merchants/${id}`),
+  updateMerchant: (id, data) => api.put(`/admin/merchants/${id}`, data),
+  verifyMerchant: (id) => api.post(`/admin/merchants/${id}/verify`),
+  toggleMerchantStatus: (id) => api.post(`/admin/merchants/${id}/toggle-status`),
+
+  // Stats
+  getStats: () => api.get('/admin/stats'),
+};
+
 export default api;

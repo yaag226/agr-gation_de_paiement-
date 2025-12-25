@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { FiUsers, FiDollarSign, FiActivity, FiCheckCircle, FiXCircle } from 'react-icons/fi';
-import api from '../services/api';
+import { adminAPI } from '../services/api';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -27,8 +27,8 @@ const AdminDashboard = () => {
       setLoading(true);
       // Charger les utilisateurs et marchands
       const [usersRes, merchantsRes] = await Promise.all([
-        api.get('/admin/users'),
-        api.get('/merchants')
+        adminAPI.getAllUsers(),
+        adminAPI.getAllMerchants()
       ]);
 
       const allUsers = usersRes.data.data || [];
@@ -59,11 +59,32 @@ const AdminDashboard = () => {
 
   const toggleUserStatus = async (userId, currentStatus) => {
     try {
-      await api.put(`/admin/users/${userId}`, { isActive: !currentStatus });
+      await adminAPI.updateUser(userId, { isActive: !currentStatus });
       await loadDashboardData();
     } catch (error) {
       console.error('Error updating user status:', error);
       alert('Erreur lors de la mise à jour du statut');
+    }
+  };
+
+  const verifyMerchant = async (merchantId) => {
+    try {
+      await adminAPI.verifyMerchant(merchantId);
+      alert('Marchand vérifié avec succès!');
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Error verifying merchant:', error);
+      alert('Erreur lors de la vérification du marchand');
+    }
+  };
+
+  const toggleMerchantStatus = async (merchantId) => {
+    try {
+      await adminAPI.toggleMerchantStatus(merchantId);
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Error toggling merchant status:', error);
+      alert('Erreur lors de la mise à jour du statut du marchand');
     }
   };
 
@@ -277,13 +298,19 @@ const AdminDashboard = () => {
                     Nom
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
+                    Utilisateur
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Solde
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Vérifié
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Statut
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -292,9 +319,11 @@ const AdminDashboard = () => {
                   <tr key={m._id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{m.businessName}</div>
+                      <div className="text-xs text-gray-500">{m.description || 'N/A'}</div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-500">{m.description || 'N/A'}</div>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{m.user?.name}</div>
+                      <div className="text-xs text-gray-500">{m.user?.email}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-gray-900">
@@ -302,9 +331,36 @@ const AdminDashboard = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      {m.isVerified ? (
+                        <span className="badge badge-success">Vérifié</span>
+                      ) : (
+                        <span className="badge badge-warning">Non vérifié</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`badge ${m.isActive ? 'badge-success' : 'badge-danger'}`}>
                         {m.isActive ? 'Actif' : 'Inactif'}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex gap-2">
+                        {!m.isVerified && (
+                          <button
+                            onClick={() => verifyMerchant(m._id)}
+                            className="btn btn-primary btn-sm"
+                            title="Vérifier ce marchand"
+                          >
+                            Vérifier
+                          </button>
+                        )}
+                        <button
+                          onClick={() => toggleMerchantStatus(m._id)}
+                          className={`btn ${m.isActive ? 'btn-danger' : 'btn-success'} btn-sm`}
+                          title={m.isActive ? 'Désactiver ce marchand' : 'Activer ce marchand'}
+                        >
+                          {m.isActive ? 'Désactiver' : 'Activer'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
