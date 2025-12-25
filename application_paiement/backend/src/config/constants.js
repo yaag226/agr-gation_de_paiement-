@@ -22,7 +22,10 @@ module.exports = {
     PAYPAL: 'paypal',
     WAVE: 'wave',
     ORANGE_MONEY: 'orange_money',
-    MTN_MONEY: 'mtn_money'
+    MTN_MONEY: 'mtn_money',
+    MOOV_MONEY: 'moov_money',
+    CORIS_BANK: 'coris_bank',
+    ECOBANK: 'ecobank'
   },
 
   // Currencies
@@ -34,7 +37,10 @@ module.exports = {
     paypal: 0.034, // 3.4%
     wave: 0.01,    // 1%
     orange_money: 0.015, // 1.5%
-    mtn_money: 0.015     // 1.5%
+    mtn_money: 0.015,    // 1.5%
+    moov_money: 0.015,   // 1.5%
+    coris_bank: 0.02,    // 2%
+    ecobank: 0.02        // 2%
   },
 
   // Default commission for platform
