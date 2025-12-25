@@ -147,6 +147,23 @@ exports.getDashboardStats = async (req, res) => {
       }
     ]);
 
+    // Calculer le revenu total (seulement les transactions completed)
+    const revenueStats = await Transaction.aggregate([
+      {
+        $match: { status: 'completed' }
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: '$amount' },
+          totalNetRevenue: { $sum: '$netAmount' }
+        }
+      }
+    ]);
+
+    const totalRevenue = revenueStats.length > 0 ? revenueStats[0].totalRevenue : 0;
+    const totalNetRevenue = revenueStats.length > 0 ? revenueStats[0].totalNetRevenue : 0;
+
     res.status(200).json({
       status: 'success',
       data: {
@@ -154,6 +171,8 @@ exports.getDashboardStats = async (req, res) => {
         totalMerchants,
         totalTransactions,
         activeUsers,
+        totalRevenue,
+        totalNetRevenue,
         usersByRole,
         transactionStats
       }

@@ -25,30 +25,30 @@ const AdminDashboard = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      // Charger les utilisateurs et marchands
-      const [usersRes, merchantsRes] = await Promise.all([
+      // Charger les utilisateurs, marchands et statistiques
+      const [usersRes, merchantsRes, statsRes] = await Promise.all([
         adminAPI.getAllUsers(),
-        adminAPI.getAllMerchants()
+        adminAPI.getAllMerchants(),
+        adminAPI.getStats()
       ]);
 
       const allUsers = usersRes.data.data || [];
       const allMerchants = merchantsRes.data.data || [];
+      const statsData = statsRes.data.data || {};
 
       setUsers(allUsers);
       setMerchants(allMerchants);
 
-      // Calculer les statistiques
-      const totalMerchants = allUsers.filter(u => u.role === 'merchant').length;
+      // Calculer les statistiques des clients
       const totalCustomers = allUsers.filter(u => u.role === 'customer').length;
-      const activeUsers = allUsers.filter(u => u.isActive).length;
 
       setStats({
-        totalUsers: allUsers.length,
-        totalMerchants,
+        totalUsers: statsData.totalUsers || allUsers.length,
+        totalMerchants: statsData.totalMerchants || 0,
         totalCustomers,
-        activeUsers,
-        totalTransactions: 0, // À implémenter
-        totalRevenue: 0 // À implémenter
+        activeUsers: statsData.activeUsers || 0,
+        totalTransactions: statsData.totalTransactions || 0,
+        totalRevenue: statsData.totalRevenue || 0
       });
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -132,14 +132,14 @@ const AdminDashboard = () => {
           color="green"
         />
         <StatCard
-          title="Clients"
-          value={stats.totalCustomers}
+          title="Transactions"
+          value={stats.totalTransactions}
           icon={FiActivity}
           color="blue"
         />
         <StatCard
-          title="Utilisateurs Actifs"
-          value={stats.activeUsers}
+          title="Revenu Total"
+          value={`${stats.totalRevenue.toLocaleString()} XOF`}
           icon={FiCheckCircle}
           color="purple"
         />

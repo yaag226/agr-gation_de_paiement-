@@ -24,10 +24,11 @@ exports.processPayment = async (req, res) => {
       });
     }
 
-    if (!paymentMethod || !['orange_money', 'mtn_money'].includes(paymentMethod)) {
+    const validPaymentMethods = ['orange_money', 'mtn_money', 'moov_money', 'coris_bank', 'ecobank'];
+    if (!paymentMethod || !validPaymentMethods.includes(paymentMethod)) {
       return res.status(400).json({
         success: false,
-        message: 'Moyen de paiement invalide. Choisissez Orange Money ou MTN Mobile Money'
+        message: 'Moyen de paiement invalide. Choisissez parmi: Orange Money, MTN Money, Moov Money, Coris Bank, Ecobank'
       });
     }
 
