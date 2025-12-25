@@ -54,8 +54,8 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/merchants', merchantRoutes);
-app.use('/api/transactions', transactionRoutes);
+app.use('/api/merchant', merchantRoutes);
+app.use('/api/client', transactionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/aggregation', aggregationRoutes);
