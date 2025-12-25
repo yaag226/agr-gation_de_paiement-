@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const logger = require('./config/logger');
 
 const authRoutes = require('./routes/auth.routes');
 const merchantRoutes = require('./routes/merchant.routes');
@@ -29,7 +30,30 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Logging
+// Logging middleware personnalisé
+app.use((req, res, next) => {
+  const start = Date.now();
+
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const logLevel = res.statusCode >= 400 ? 'warn' : 'http';
+
+    logger[logLevel](`${req.method} ${req.originalUrl}`, {
+      method: req.method,
+      url: req.originalUrl,
+      status: res.statusCode,
+      duration: `${duration}ms`,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      userId: req.user?.id,
+      userRole: req.user?.role
+    });
+  });
+
+  next();
+});
+
+// Morgan pour logs HTTP en développement (plus lisible en console)
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
@@ -71,7 +95,10 @@ app.use((req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  logger.logError(err, req, {
+    statusCode: err.statusCode || 500,
+    name: err.name
+  });
 
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';

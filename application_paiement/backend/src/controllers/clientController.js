@@ -1,6 +1,7 @@
 const Payment = require('../models/Payment');
 const User = require('../models/User');
 const { simulatePayment } = require('../utils/paymentSimulator');
+const logger = require('../config/logger');
 
 // @desc    Créer un paiement
 // @route   POST /api/client/payments
@@ -8,8 +9,21 @@ exports.createPayment = async (req, res) => {
   try {
     const { merchantId, amount, paymentMethod, description } = req.body;
 
+    logger.info('Tentative de création de paiement', {
+      clientId: req.user.id,
+      merchantId,
+      amount,
+      paymentMethod
+    });
+
     // Validation
     if (!merchantId || !amount || !paymentMethod) {
+      logger.warn('Tentative de paiement avec données manquantes', {
+        clientId: req.user.id,
+        hasAmount: !!amount,
+        hasMerchant: !!merchantId,
+        hasMethod: !!paymentMethod
+      });
       return res.status(400).json({
         success: false,
         message: 'Données manquantes'
@@ -19,6 +33,12 @@ exports.createPayment = async (req, res) => {
     // Vérifier que le marchand existe
     const merchant = await User.findById(merchantId);
     if (!merchant || merchant.role !== 'merchant') {
+      logger.warn('Tentative de paiement vers marchand invalide', {
+        clientId: req.user.id,
+        merchantId,
+        merchantExists: !!merchant,
+        merchantRole: merchant?.role
+      });
       return res.status(404).json({
         success: false,
         message: 'Marchand non trouvé'
@@ -33,6 +53,12 @@ exports.createPayment = async (req, res) => {
       paymentMethod,
       description: description || `Paiement à ${merchant.businessName}`,
       status: 'PENDING'
+    });
+
+    logger.logPayment('create', payment._id, amount, 'PENDING', {
+      clientId: req.user.id,
+      merchantId,
+      paymentMethod
     });
 
     // Simuler le traitement du paiement
@@ -53,6 +79,20 @@ exports.createPayment = async (req, res) => {
 
     await payment.save();
 
+    logger.logPayment(
+      'process',
+      payment._id,
+      amount,
+      payment.status,
+      {
+        clientId: req.user.id,
+        merchantId,
+        paymentMethod,
+        processingTime: simulationResult.processingTime,
+        failureReason: simulationResult.failureReason
+      }
+    );
+
     // Si succès, mettre à jour les statistiques
     if (simulationResult.success) {
       await User.findByIdAndUpdate(req.user.id, {
@@ -60,6 +100,19 @@ exports.createPayment = async (req, res) => {
       });
       await User.findByIdAndUpdate(merchantId, {
         $inc: { totalReceived: payment.netAmount, transactionCount: 1 }
+      });
+      logger.info('Statistiques utilisateurs mises à jour', {
+        clientId: req.user.id,
+        merchantId,
+        paymentId: payment._id
+      });
+    } else {
+      logger.warn('Paiement échoué', {
+        paymentId: payment._id,
+        clientId: req.user.id,
+        merchantId,
+        amount,
+        failureReason: simulationResult.failureReason
       });
     }
 
@@ -72,6 +125,12 @@ exports.createPayment = async (req, res) => {
       payment
     });
   } catch (error) {
+    logger.logError(error, req, {
+      operation: 'createPayment',
+      clientId: req.user.id,
+      amount: req.body.amount,
+      merchantId: req.body.merchantId
+    });
     res.status(500).json({
       success: false,
       message: 'Erreur lors du paiement',
@@ -106,6 +165,10 @@ exports.getPayments = async (req, res) => {
       payments
     });
   } catch (error) {
+    logger.logError(error, req, {
+      operation: 'getPayments',
+      clientId: req.user.id
+    });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des paiements',
@@ -140,6 +203,10 @@ exports.getStats = async (req, res) => {
       }
     });
   } catch (error) {
+    logger.logError(error, req, {
+      operation: 'getStats',
+      clientId: req.user.id
+    });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des statistiques',
@@ -152,9 +219,9 @@ exports.getStats = async (req, res) => {
 // @route   GET /api/client/merchants
 exports.getMerchants = async (req, res) => {
   try {
-    const merchants = await User.find({ 
+    const merchants = await User.find({
       role: 'merchant',
-      isActive: true 
+      isActive: true
     }).select('businessName email phone businessCategory businessAddress');
 
     res.status(200).json({
@@ -163,6 +230,10 @@ exports.getMerchants = async (req, res) => {
       merchants
     });
   } catch (error) {
+    logger.logError(error, req, {
+      operation: 'getMerchants',
+      clientId: req.user.id
+    });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des marchands',

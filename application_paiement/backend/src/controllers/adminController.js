@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Payment = require('../models/Payment');
+const logger = require('../config/logger');
 
 // @desc    Obtenir tous les utilisateurs
 // @route   GET /api/admin/users
@@ -28,6 +29,10 @@ exports.getUsers = async (req, res) => {
       users
     });
   } catch (error) {
+    logger.logError(error, req, {
+      operation: 'getUsers',
+      adminId: req.user.id
+    });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des utilisateurs',
@@ -43,6 +48,10 @@ exports.toggleUserStatus = async (req, res) => {
     const user = await User.findById(req.params.id);
 
     if (!user) {
+      logger.warn('Tentative de modification de statut d\'utilisateur inexistant', {
+        adminId: req.user.id,
+        targetUserId: req.params.id
+      });
       return res.status(404).json({
         success: false,
         message: 'Utilisateur non trouvé'
@@ -50,14 +59,29 @@ exports.toggleUserStatus = async (req, res) => {
     }
 
     if (user.role === 'admin') {
+      logger.warn('Tentative de modification de statut d\'un admin', {
+        adminId: req.user.id,
+        targetUserId: user._id,
+        targetUserEmail: user.email
+      });
       return res.status(403).json({
         success: false,
         message: 'Impossible de modifier un administrateur'
       });
     }
 
+    const previousStatus = user.isActive;
     user.isActive = !user.isActive;
     await user.save();
+
+    logger.info('Statut utilisateur modifié', {
+      adminId: req.user.id,
+      targetUserId: user._id,
+      targetUserEmail: user.email,
+      previousStatus,
+      newStatus: user.isActive,
+      action: user.isActive ? 'activated' : 'deactivated'
+    });
 
     res.status(200).json({
       success: true,
@@ -65,6 +89,11 @@ exports.toggleUserStatus = async (req, res) => {
       user
     });
   } catch (error) {
+    logger.logError(error, req, {
+      operation: 'toggleUserStatus',
+      adminId: req.user.id,
+      targetUserId: req.params.id
+    });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la modification',
@@ -100,6 +129,10 @@ exports.getAllPayments = async (req, res) => {
       payments
     });
   } catch (error) {
+    logger.logError(error, req, {
+      operation: 'getAllPayments',
+      adminId: req.user.id
+    });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des paiements',
@@ -210,6 +243,10 @@ exports.getDashboard = async (req, res) => {
       }
     });
   } catch (error) {
+    logger.logError(error, req, {
+      operation: 'getDashboard',
+      adminId: req.user.id
+    });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération du tableau de bord',
@@ -261,6 +298,10 @@ exports.getGlobalStats = async (req, res) => {
       stats: stats[0]
     });
   } catch (error) {
+    logger.logError(error, req, {
+      operation: 'getGlobalStats',
+      adminId: req.user.id
+    });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des statistiques',

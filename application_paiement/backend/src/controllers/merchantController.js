@@ -1,5 +1,6 @@
 const Payment = require('../models/Payment');
 const User = require('../models/User');
+const logger = require('../config/logger');
 
 // @desc    Obtenir les paiements reçus
 // @route   GET /api/merchant/payments
@@ -7,10 +8,15 @@ exports.getPayments = async (req, res) => {
   try {
     const { status, startDate, endDate, page = 1, limit = 10 } = req.query;
 
+    logger.info('Récupération des paiements merchant', {
+      merchantId: req.user.id,
+      filters: { status, startDate, endDate, page, limit }
+    });
+
     const query = { merchant: req.user.id };
-    
+
     if (status) query.status = status;
-    
+
     if (startDate || endDate) {
       query.createdAt = {};
       if (startDate) query.createdAt.$gte = new Date(startDate);
@@ -25,6 +31,13 @@ exports.getPayments = async (req, res) => {
 
     const total = await Payment.countDocuments(query);
 
+    logger.info('Paiements récupérés avec succès', {
+      merchantId: req.user.id,
+      count: payments.length,
+      total,
+      page
+    });
+
     res.status(200).json({
       success: true,
       count: payments.length,
@@ -34,6 +47,10 @@ exports.getPayments = async (req, res) => {
       payments
     });
   } catch (error) {
+    logger.logError(error, req, {
+      operation: 'getPayments',
+      merchantId: req.user.id
+    });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des paiements',
@@ -135,6 +152,10 @@ exports.getDashboard = async (req, res) => {
       }
     });
   } catch (error) {
+    logger.logError(error, req, {
+      operation: 'getDashboard',
+      merchantId: req.user.id
+    });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération du tableau de bord',
@@ -176,6 +197,11 @@ exports.getStats = async (req, res) => {
       stats
     });
   } catch (error) {
+    logger.logError(error, req, {
+      operation: 'getStats',
+      merchantId: req.user.id,
+      period: req.query.period
+    });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des statistiques',
