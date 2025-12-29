@@ -1,7 +1,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const User = require('./models/User');
-const Payment = require('./models/Payment');
+const User = require('../models/User');
+const Payment = require('../models/Payment');
 
 const connectDB = async () => {
   await mongoose.connect(process.env.MONGODB_URI);
@@ -38,7 +38,8 @@ const seedData = async () => {
         phone: '+22670123456',
         businessName: 'Boutique Wend Panga',
         businessCategory: 'Boutique',
-        businessAddress: 'Ouagadougou, Burkina Faso'
+        businessAddress: 'Ouagadougou, Burkina Faso',
+        isActive: true
       },
       {
         firstName: 'Fatimata',
@@ -49,7 +50,8 @@ const seedData = async () => {
         phone: '+22670234567',
         businessName: 'Restaurant Chez Fatim',
         businessCategory: 'Restaurant',
-        businessAddress: 'Bobo-Dioulasso, Burkina Faso'
+        businessAddress: 'Bobo-Dioulasso, Burkina Faso',
+        isActive: true
       },
       {
         firstName: 'Ibrahim',
@@ -60,7 +62,8 @@ const seedData = async () => {
         phone: '+22670345678',
         businessName: 'BF Tech Store',
         businessCategory: 'Electronique',
-        businessAddress: 'Ouagadougou, Burkina Faso'
+        businessAddress: 'Ouagadougou, Burkina Faso',
+        isActive: true
       }
     ]);
 
