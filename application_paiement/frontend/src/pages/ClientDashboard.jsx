@@ -33,20 +33,51 @@ const ClientDashboard = () => {
 
   const loadData = async () => {
     try {
+      console.log('🔄 Chargement des données du dashboard...');
       const [statsRes, paymentsRes, merchantsRes] = await Promise.all([
         clientAPI.getStats(),
         clientAPI.getPayments(),
         clientAPI.getMerchants()
       ]);
 
+      console.log('📊 Statistiques reçues:', statsRes.data);
+      console.log('💳 Paiements reçus:', paymentsRes.data.payments?.length || 0);
+      console.log('🏪 Marchands reçus:', merchantsRes.data);
+      console.log('🏪 Nombre de marchands:', merchantsRes.data.merchants?.length || 0);
+
       setStats(statsRes.data.stats);
       setPayments(paymentsRes.data.payments);
       setMerchants(merchantsRes.data.merchants);
+
+      console.log('✅ Données chargées avec succès');
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('❌ Erreur lors du chargement:', error);
+      console.error('❌ Détails:', error.response?.data);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Recharger uniquement les marchands
+  const loadMerchants = async () => {
+    try {
+      console.log('🔄 Rechargement de la liste des marchands...');
+      const merchantsRes = await clientAPI.getMerchants();
+      console.log('🏪 Marchands reçus:', merchantsRes.data);
+      console.log('🏪 Nombre de marchands:', merchantsRes.data.merchants?.length || 0);
+      setMerchants(merchantsRes.data.merchants);
+      console.log('✅ Marchands rechargés avec succès');
+    } catch (error) {
+      console.error('❌ Erreur lors du rechargement des marchands:', error);
+      console.error('❌ Détails:', error.response?.data);
+    }
+  };
+
+  // Ouvrir le modal et recharger les marchands
+  const handleOpenPaymentModal = async () => {
+    console.log('📂 Ouverture du modal de paiement...');
+    setShowPaymentModal(true);
+    await loadMerchants();
   };
 
   const filteredPayments = payments.filter(payment => {
@@ -74,9 +105,9 @@ const ClientDashboard = () => {
             <h1 style={styles.title}>Tableau de bord Client</h1>
             <p style={styles.subtitle}>Gérez vos paiements et transactions</p>
           </div>
-          <button 
+          <button
             className="btn btn-success"
-            onClick={() => setShowPaymentModal(true)}
+            onClick={handleOpenPaymentModal}
           >
             <Plus size={18} />
             <span>Nouveau paiement</span>
@@ -231,6 +262,15 @@ const PaymentModal = ({ merchants, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  // Debug: afficher les marchands reçus
+  useEffect(() => {
+    console.log('🏪 PaymentModal - Marchands reçus en props:', merchants);
+    console.log('🏪 PaymentModal - Nombre de marchands:', merchants?.length || 0);
+    if (merchants && merchants.length > 0) {
+      console.log('🏪 PaymentModal - Détails des marchands:', merchants);
+    }
+  }, [merchants]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
