@@ -237,10 +237,32 @@ const PaymentModal = ({ merchants, onClose, onSuccess }) => {
     setLoading(true);
     setError('');
 
+    // Validation du montant
+    const amount = parseInt(formData.amount);
+    if (isNaN(amount) || amount < 100) {
+      setError('Le montant minimum est de 100 FCFA');
+      setLoading(false);
+      return;
+    }
+
+    // Validation du marchand
+    if (!formData.merchantId) {
+      setError('Veuillez sélectionner un marchand');
+      setLoading(false);
+      return;
+    }
+
+    // Validation de la méthode de paiement
+    if (!formData.paymentMethod) {
+      setError('Veuillez sélectionner une méthode de paiement');
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await clientAPI.createPayment({
         ...formData,
-        amount: parseInt(formData.amount)
+        amount
       });
 
       if (response.data.success) {
@@ -314,6 +336,9 @@ const PaymentModal = ({ merchants, onClose, onSuccess }) => {
               placeholder="Ex: 5000"
               required
             />
+            <small style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+              Montant minimum: 100 FCFA
+            </small>
           </div>
 
           <div className="input-group">
