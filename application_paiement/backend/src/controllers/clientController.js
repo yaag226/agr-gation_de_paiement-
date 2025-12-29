@@ -236,12 +236,17 @@ exports.getMerchants = async (req, res) => {
 
     const merchants = await User.find({
       role: 'merchant',
-      isActive: true
-    }).select('businessName email phone businessCategory businessAddress');
+      isActive: { $ne: false }
+    }).select('businessName email phone businessCategory businessAddress isActive');
 
     logger.info('Marchands récupérés avec succès', {
       clientId: req.user.id,
-      count: merchants.length
+      count: merchants.length,
+      merchants: merchants.map(m => ({
+        id: m._id,
+        businessName: m.businessName,
+        isActive: m.isActive
+      }))
     });
 
     res.status(200).json({
