@@ -10,7 +10,6 @@ const authRoutes = require('./routes/auth.routes');
 const merchantRoutes = require('./routes/merchant.routes');
 const transactionRoutes = require('./routes/transaction.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
-const paymentRoutes = require('./routes/payment.routes');
 const aggregationRoutes = require('./routes/aggregation.routes');
 const adminRoutes = require('./routes/admin.routes');
 
@@ -81,7 +80,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/merchant', merchantRoutes);
 app.use('/api/client', transactionRoutes);
 app.use('/api/analytics', analyticsRoutes);
-app.use('/api/payment', paymentRoutes);
 app.use('/api/aggregation', aggregationRoutes);
 app.use('/api/admin', adminRoutes);
 

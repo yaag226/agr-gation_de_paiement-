@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Payment = require('../models/Payment');
 const User = require('../models/User');
 const { simulatePayment } = require('../utils/paymentSimulator');
@@ -184,7 +185,7 @@ exports.getStats = async (req, res) => {
     const user = await User.findById(req.user.id);
 
     const paymentsStats = await Payment.aggregate([
-      { $match: { client: req.user._id } },
+      { $match: { client: mongoose.Types.ObjectId(req.user.id) } },
       {
         $group: {
           _id: '$status',
