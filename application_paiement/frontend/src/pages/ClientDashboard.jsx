@@ -309,6 +309,23 @@ const PaymentModal = ({ merchants, onClose, onSuccess }) => {
           </div>
         )}
 
+        {merchants.length === 0 && (
+          <div className="alert alert-warning" style={{
+            backgroundColor: '#fff3cd',
+            borderColor: '#ffc107',
+            color: '#856404',
+            padding: '1rem',
+            borderRadius: '8px',
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <Store size={20} />
+            <span>Aucun marchand disponible. Veuillez contacter l'administrateur pour activer des marchands.</span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
           <div className="input-group">
             <label>Marchand</label>
@@ -316,8 +333,11 @@ const PaymentModal = ({ merchants, onClose, onSuccess }) => {
               value={formData.merchantId}
               onChange={(e) => setFormData({ ...formData, merchantId: e.target.value })}
               required
+              disabled={merchants.length === 0}
             >
-              <option value="">Sélectionner un marchand</option>
+              <option value="">
+                {merchants.length === 0 ? 'Aucun marchand disponible' : 'Sélectionner un marchand'}
+              </option>
               {merchants.map(merchant => (
                 <option key={merchant._id} value={merchant._id}>
                   {merchant.businessName} - {merchant.businessCategory}
@@ -370,7 +390,7 @@ const PaymentModal = ({ merchants, onClose, onSuccess }) => {
             <button type="button" className="btn btn-outline" onClick={onClose}>
               Annuler
             </button>
-            <button type="submit" className="btn btn-success" disabled={loading}>
+            <button type="submit" className="btn btn-success" disabled={loading || merchants.length === 0}>
               {loading ? (
                 <>
                   <div className="loading-spinner"></div>

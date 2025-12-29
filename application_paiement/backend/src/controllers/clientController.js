@@ -220,10 +220,32 @@ exports.getStats = async (req, res) => {
 // @route   GET /api/client/merchants
 exports.getMerchants = async (req, res) => {
   try {
+    logger.info('Récupération de la liste des marchands', {
+      clientId: req.user.id
+    });
+
+    // Compter tous les marchands (actifs et inactifs)
+    const totalMerchants = await User.countDocuments({ role: 'merchant' });
+    const activeMerchants = await User.countDocuments({
+      role: 'merchant',
+      isActive: true
+    });
+
+    logger.info('Statistiques des marchands', {
+      total: totalMerchants,
+      actifs: activeMerchants,
+      inactifs: totalMerchants - activeMerchants
+    });
+
     const merchants = await User.find({
       role: 'merchant',
       isActive: true
     }).select('businessName email phone businessCategory businessAddress');
+
+    logger.info('Marchands récupérés avec succès', {
+      count: merchants.length,
+      clientId: req.user.id
+    });
 
     res.status(200).json({
       success: true,
