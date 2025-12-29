@@ -86,6 +86,7 @@ npm run dev
 
 ### Étape 5: Tester la connexion
 
+NB : si la connexion avec les seeder echoue cliquer sur s'inscire et creer vos different compte et faite le test
 **Connexion Admin:**
 - Email: `admin@payment-bf.com`
 - Mot de passe: `admin123`
@@ -97,6 +98,7 @@ npm run dev
 **Connexion Client:**
 - Email: `salif@email.com`
 - Mot de passe: `client123`
+
 
 ## Vérification des Marchands Actifs
 
