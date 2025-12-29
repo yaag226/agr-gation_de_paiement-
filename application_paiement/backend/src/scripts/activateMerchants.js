@@ -6,7 +6,7 @@ const User = require('../models/User');
 const activateMerchants = async () => {
   try {
     // Connexion à MongoDB
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGODB_URI);
     console.log('✅ Connecté à MongoDB');
 
     // Récupérer tous les utilisateurs avec le rôle merchant
