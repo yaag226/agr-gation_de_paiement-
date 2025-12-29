@@ -226,17 +226,32 @@ exports.getMerchants = async (req, res) => {
 
     // Compter tous les marchands (actifs et inactifs)
     const totalMerchants = await User.countDocuments({ role: 'merchant' });
-    const activeMerchants = await User.countDocuments({ role: 'merchant', isActive: true });
-
-    logger.info('Statistiques marchands', {
-      totalMerchants,
-      activeMerchants,
-      inactiveMerchants: totalMerchants - activeMerchants
+    const activeMerchantsCount = await User.countDocuments({ role: 'merchant', isActive: true });
+    const inactiveMerchantsCount = await User.countDocuments({ role: 'merchant', isActive: false });
+    const undefinedStatusCount = await User.countDocuments({
+      role: 'merchant',
+      $or: [
+        { isActive: { $exists: false } },
+        { isActive: null }
+      ]
     });
 
+    logger.info('Statistiques marchands détaillées', {
+      totalMerchants,
+      activeMerchants: activeMerchantsCount,
+      inactiveMerchants: inactiveMerchantsCount,
+      undefinedStatus: undefinedStatusCount
+    });
+
+    // Requête plus robuste : inclure les marchands avec isActive=true, undefined, ou null
+    // MAIS PAS ceux avec isActive=false
     const merchants = await User.find({
       role: 'merchant',
-      isActive: { $ne: false }
+      $or: [
+        { isActive: true },
+        { isActive: { $exists: false } },
+        { isActive: null }
+      ]
     }).select('businessName email phone businessCategory businessAddress isActive');
 
     logger.info('Marchands récupérés avec succès', {
@@ -248,6 +263,19 @@ exports.getMerchants = async (req, res) => {
         isActive: m.isActive
       }))
     });
+
+    // Si aucun marchand actif trouvé, logger un avertissement détaillé
+    if (merchants.length === 0) {
+      logger.warn('Aucun marchand actif disponible', {
+        totalMerchants,
+        activeMerchantsCount,
+        inactiveMerchantsCount,
+        undefinedStatusCount,
+        suggestion: totalMerchants > 0
+          ? 'Des marchands existent mais sont tous inactifs. Exécutez le script activateMerchants.js'
+          : 'Aucun marchand dans la base de données. Exécutez npm run seed'
+      });
+    }
 
     res.status(200).json({
       success: true,
