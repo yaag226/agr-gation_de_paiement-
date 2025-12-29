@@ -41,9 +41,13 @@ const ClientDashboard = () => {
 
       setStats(statsRes.data.stats);
       setPayments(paymentsRes.data.payments);
-      setMerchants(merchantsRes.data.merchants);
+      setMerchants(merchantsRes.data.merchants || []);
+
+      console.log('Marchands chargés:', merchantsRes.data.merchants);
+      console.log('Nombre de marchands:', merchantsRes.data.merchants?.length || 0);
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Erreur lors du chargement des données:', error);
+      console.error('Détails de l\'erreur:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
@@ -316,14 +320,24 @@ const PaymentModal = ({ merchants, onClose, onSuccess }) => {
               value={formData.merchantId}
               onChange={(e) => setFormData({ ...formData, merchantId: e.target.value })}
               required
+              disabled={merchants.length === 0}
             >
-              <option value="">Sélectionner un marchand</option>
+              <option value="">
+                {merchants.length === 0
+                  ? 'Aucun marchand actif disponible'
+                  : 'Sélectionner un marchand'}
+              </option>
               {merchants.map(merchant => (
                 <option key={merchant._id} value={merchant._id}>
-                  {merchant.businessName} - {merchant.businessCategory}
+                  {merchant.businessName}{merchant.businessCategory ? ` - ${merchant.businessCategory}` : ''}
                 </option>
               ))}
             </select>
+            {merchants.length === 0 && (
+              <small style={{ color: 'var(--status-error)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                Aucun marchand actif trouvé. Veuillez contacter un administrateur.
+              </small>
+            )}
           </div>
 
           <div className="input-group">
