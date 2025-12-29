@@ -14,17 +14,33 @@ exports.register = async (req, res) => {
   try {
     const { firstName, lastName, email, password, role, phone, businessName, businessCategory } = req.body;
 
+    // Trim and validate inputs
+    const trimmedEmail = email?.toString().trim().toLowerCase();
+    const trimmedPassword = password?.toString().trim();
+    const trimmedFirstName = firstName?.toString().trim();
+    const trimmedLastName = lastName?.toString().trim();
+    const trimmedPhone = phone?.toString().trim();
+    const trimmedBusinessName = businessName?.toString().trim();
+
+    // Validate required fields
+    if (!trimmedEmail || !trimmedPassword || !trimmedFirstName || !trimmedLastName || !trimmedPhone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tous les champs requis doivent être remplis'
+      });
+    }
+
     logger.info('Tentative d\'inscription', {
-      email,
+      email: trimmedEmail,
       role: role || 'client',
       ip: req.ip,
-      hasBusinessName: !!businessName
+      hasBusinessName: !!trimmedBusinessName
     });
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: trimmedEmail });
     if (existingUser) {
       logger.warn('Tentative d\'inscription avec email existant', {
-        email,
+        email: trimmedEmail,
         ip: req.ip
       });
       return res.status(400).json({
@@ -34,23 +50,29 @@ exports.register = async (req, res) => {
     }
 
     const userData = {
-      firstName,
-      lastName,
-      email,
-      password,
+      firstName: trimmedFirstName,
+      lastName: trimmedLastName,
+      email: trimmedEmail,
+      password: trimmedPassword,
       role: role || 'client',
-      phone
+      phone: trimmedPhone
     };
 
     if (role === 'merchant') {
-      userData.businessName = businessName;
+      if (!trimmedBusinessName) {
+        return res.status(400).json({
+          success: false,
+          message: 'Le nom de l\'entreprise est requis pour les marchands'
+        });
+      }
+      userData.businessName = trimmedBusinessName;
       userData.businessCategory = businessCategory;
     }
 
     const user = await User.create(userData);
     const token = generateToken(user._id);
 
-    logger.logAuth('register', email, true, req, {
+    logger.logAuth('register', trimmedEmail, true, req, {
       userId: user._id,
       role: user.role,
       businessName: user.businessName
@@ -89,16 +111,20 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Trim and validate inputs
+    const trimmedEmail = email?.toString().trim().toLowerCase();
+    const trimmedPassword = password?.toString().trim();
+
     logger.info('Tentative de connexion', {
-      email,
+      email: trimmedEmail,
       ip: req.ip,
       userAgent: req.get('user-agent')
     });
 
-    if (!email || !password) {
+    if (!trimmedEmail || !trimmedPassword) {
       logger.warn('Tentative de connexion sans identifiants complets', {
-        email: !!email,
-        password: !!password,
+        email: !!trimmedEmail,
+        password: !!trimmedPassword,
         ip: req.ip
       });
       return res.status(400).json({
@@ -107,15 +133,15 @@ exports.login = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email: trimmedEmail }).select('+password');
 
-    if (!user || !(await user.comparePassword(password))) {
+    if (!user || !(await user.comparePassword(trimmedPassword))) {
       logger.warn('Tentative de connexion avec identifiants invalides', {
-        email,
+        email: trimmedEmail,
         ip: req.ip,
         userExists: !!user
       });
-      logger.logAuth('login', email, false, req, {
+      logger.logAuth('login', trimmedEmail, false, req, {
         reason: 'invalid_credentials'
       });
       return res.status(401).json({
@@ -126,11 +152,11 @@ exports.login = async (req, res) => {
 
     if (!user.isActive) {
       logger.warn('Tentative de connexion avec compte désactivé', {
-        email,
+        email: trimmedEmail,
         userId: user._id,
         ip: req.ip
       });
-      logger.logAuth('login', email, false, req, {
+      logger.logAuth('login', trimmedEmail, false, req, {
         userId: user._id,
         reason: 'account_disabled'
       });
@@ -142,7 +168,7 @@ exports.login = async (req, res) => {
 
     const token = generateToken(user._id);
 
-    logger.logAuth('login', email, true, req, {
+    logger.logAuth('login', trimmedEmail, true, req, {
       userId: user._id,
       role: user.role
     });
