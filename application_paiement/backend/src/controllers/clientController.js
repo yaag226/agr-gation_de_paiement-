@@ -185,7 +185,7 @@ exports.getStats = async (req, res) => {
     const user = await User.findById(req.user.id);
 
     const paymentsStats = await Payment.aggregate([
-      { $match: { client: mongoose.Types.ObjectId(req.user.id) } },
+      { $match: { client: new mongoose.Types.ObjectId(req.user.id) } },
       {
         $group: {
           _id: '$status',
